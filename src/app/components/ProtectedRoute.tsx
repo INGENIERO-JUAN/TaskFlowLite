@@ -1,0 +1,11 @@
+/**
+ * ProtectedRoute — Protege rutas que requieren autenticación.
+ * Si el usuario NO está autenticado, redirige a /login.
+ */
+import { Navigate, Outlet } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+
+export function ProtectedRoute() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+}
