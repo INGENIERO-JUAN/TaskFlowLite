@@ -1,62 +1,15 @@
 /**
- * AuthContext — Proveedor global de autenticación para TaskFlow Lite.
+ * AuthContext — DEPRECADO. Conservado solo como referencia histórica del Corte 1.
  *
- * Este contexto ahora es solo responsable de:
- * - Crear y exponer el contexto de autenticación
- * - Delegar toda la lógica de login/register/logout a useAuthActions
+ * ⚠️ NO SE USA EN NINGUNA PARTE DE LA APLICACIÓN.
  *
- * La lógica de negocio (validaciones, localStorage, estado) vive en:
- * → src/app/hooks/useAuthActions.ts
+ * En la Fase 3-4 toda la lógica de autenticación fue migrada completamente
+ * a Zustand (useAuthStore). Context API fue eliminada de la arquitectura activa.
+ *
+ * Ver: src/app/stores/useAuthStore.ts
  */
 
-import React, { createContext, useContext, ReactNode } from "react";
-import { useAuthActions } from "../hooks/useAuthActions";
-import type { AuthUser, RegisterData } from "../hooks/useAuthActions";
-
-// ─── Re-exportamos AuthUser para que los consumidores no cambien sus imports ──
-
-export type { AuthUser };
-
-// ─── Context type ─────────────────────────────────────────────────────────────
-
-interface AuthContextType {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
-}
-
-// ─── Context ──────────────────────────────────────────────────────────────────
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, login, register, logout } = useAuthActions();
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        login,
-        register,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
-export function useAuth(): AuthContextType {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth debe usarse dentro de <AuthProvider>");
-  }
-  return ctx;
-}
+// Este archivo está intencionalmente vacío para no eliminar el historial de git.
+// El componente AuthProvider y el hook useAuth de Context API
+// fueron reemplazados por useAuthStore (Zustand).
+export {};

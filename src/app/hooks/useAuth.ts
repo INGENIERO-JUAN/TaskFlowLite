@@ -1,8 +1,10 @@
 /**
- * Re-exporta el hook useAuth desde AuthContext para mantener
- * la separación de responsabilidades por carpetas.
+ * useAuth.ts — Re-exporta el store de autenticación de Zustand.
+ *
+ * Punto de acceso unificado para toda la app.
+ * Reemplaza el Context API anterior.
  *
  * Uso: import { useAuth } from "@/hooks/useAuth";
  */
-export { useAuth } from "../context/AuthContext";
-export type { AuthUser } from "../context/AuthContext";
+export { useAuthStore as useAuth } from "../stores/useAuthStore";
+export type { AuthUser } from "../stores/useAuthStore";

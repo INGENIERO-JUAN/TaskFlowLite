@@ -1,433 +1,258 @@
 /**
- * Habits Page — Módulo de hábitos diarios.
- * Rastrear hábitos con racha, calendario semanal y progreso.
- * Persistencia en localStorage por usuario.
+ * Habits Page — Rastreador de hábitos diarios.
+ * Dark mode completo + NavbarAuth eliminada (viene del DashboardLayout).
  */
 import React, { useState, useEffect } from "react";
-import { NavbarAuth } from "../components/NavbarAuth";
+import { Plus, Trash2, Flame, CheckCircle2, Circle, Trophy, Target } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { Modal } from "../components/ui/Modal";
+import { Input }  from "../components/ui/Input";
+import { Modal }  from "../components/ui/Modal";
 import { useAuth } from "../hooks/useAuth";
-import {
-  Plus,
-  Trash2,
-  Flame,
-  CheckCircle2,
-  Circle,
-  Target,
-  Edit3,
-} from "lucide-react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type HabitColor = "blue" | "green" | "purple" | "orange" | "red";
 
 interface Habit {
   id: number;
   name: string;
-  description: string;
-  color: HabitColor;
   emoji: string;
-  completedDates: string[]; // ISO date strings "YYYY-MM-DD"
+  color: HabitColor;
+  completedDates: string[];
   createdAt: string;
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+type HabitColor = "blue" | "green" | "purple" | "orange" | "pink" | "red";
 
-const colorConfig: Record<HabitColor, { bg: string; text: string; ring: string; dot: string }> = {
-  blue:   { bg: "bg-blue-100",   text: "text-blue-700",   ring: "ring-blue-400",   dot: "bg-blue-500"   },
-  green:  { bg: "bg-green-100",  text: "text-green-700",  ring: "ring-green-400",  dot: "bg-green-500"  },
-  purple: { bg: "bg-purple-100", text: "text-purple-700", ring: "ring-purple-400", dot: "bg-purple-500" },
-  orange: { bg: "bg-orange-100", text: "text-orange-700", ring: "ring-orange-400", dot: "bg-orange-500" },
-  red:    { bg: "bg-red-100",    text: "text-red-700",    ring: "ring-red-400",    dot: "bg-red-500"    },
+const colorConfig: Record<HabitColor, { bg: string; text: string; ring: string; bar: string }> = {
+  blue:   { bg: "bg-blue-50 dark:bg-blue-950/40",   text: "text-blue-600",   ring: "ring-blue-400",   bar: "bg-blue-500"   },
+  green:  { bg: "bg-green-50 dark:bg-green-950/40",  text: "text-green-600",  ring: "ring-green-400",  bar: "bg-green-500"  },
+  purple: { bg: "bg-purple-50 dark:bg-purple-950/40",text: "text-purple-600", ring: "ring-purple-400", bar: "bg-purple-500" },
+  orange: { bg: "bg-orange-50 dark:bg-orange-950/40",text: "text-orange-600", ring: "ring-orange-400", bar: "bg-orange-500" },
+  pink:   { bg: "bg-pink-50 dark:bg-pink-950/40",   text: "text-pink-600",   ring: "ring-pink-400",   bar: "bg-pink-500"   },
+  red:    { bg: "bg-red-50 dark:bg-red-950/40",     text: "text-red-600",    ring: "ring-red-400",    bar: "bg-red-500"    },
 };
 
-const EMOJIS = ["💪", "📚", "🏃", "💧", "🧘", "✍️", "🎯", "🍎", "😴", "🌱"];
+const COLORS: HabitColor[] = ["blue", "green", "purple", "orange", "pink", "red"];
+const EMOJIS = ["💪", "📚", "🏃", "💧", "🧘", "🎯", "🍎", "😴", "✍️", "🎨", "🎵", "🌿"];
+const EMPTY_FORM = { name: "", emoji: "💪", color: "blue" as HabitColor };
 
-const EMPTY_FORM = { name: "", description: "", color: "blue" as HabitColor, emoji: "🎯" };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function toDateStr(date: Date): string {
-  return date.toISOString().split("T")[0];
-}
+function toDateStr(date: Date) { return date.toISOString().split("T")[0]; }
 
 function getStreak(completedDates: string[]): number {
-  if (completedDates.length === 0) return 0;
+  if (!completedDates.length) return 0;
   const sorted = [...completedDates].sort().reverse();
   const today = toDateStr(new Date());
   let streak = 0;
   let current = new Date();
-
-  for (let i = 0; i < 365; i++) {
-    const dateStr = toDateStr(current);
-    if (sorted.includes(dateStr)) {
-      streak++;
-      current.setDate(current.getDate() - 1);
-    } else if (dateStr === today) {
-      current.setDate(current.getDate() - 1);
-    } else {
-      break;
-    }
+  if (sorted[0] !== today) current.setDate(current.getDate() - 1);
+  for (const d of sorted) {
+    if (d === toDateStr(current)) { streak++; current.setDate(current.getDate() - 1); } else break;
   }
   return streak;
 }
 
-function getLast7Days(): { date: Date; str: string; label: string }[] {
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
+function getLast7Days(): { label: string; date: string }[] {
+  return Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push({
-      date: d,
-      str: toDateStr(d),
-      label: d.toLocaleDateString("es-ES", { weekday: "short" }).slice(0, 2),
-    });
-  }
-  return days;
+    d.setDate(d.getDate() - (6 - i));
+    return { label: d.toLocaleDateString("es-ES", { weekday: "short" }).slice(0, 2), date: toDateStr(d) };
+  });
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function getCompletionRate(completedDates: string[], createdAt: string): number {
+  const start = new Date(createdAt);
+  const today = new Date();
+  const totalDays = Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1);
+  return Math.round((completedDates.length / totalDays) * 100);
+}
 
 export function Habits() {
   const { user } = useAuth();
-  const storageKey = `taskflow_habits_${user?.email}`;
+  const storageKey = `habits_${user?.email ?? "guest"}`;
 
   const [habits, setHabits] = useState<Habit[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    try { const raw = localStorage.getItem(storageKey); return raw ? JSON.parse(raw) : []; } catch { return []; }
   });
-
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [deleteHabit, setDeleteHabit] = useState<Habit | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm]               = useState({ ...EMPTY_FORM });
 
   const today = toDateStr(new Date());
-  const last7 = getLast7Days();
+  const last7Days = getLast7Days();
 
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(habits));
-  }, [habits, storageKey]);
+  useEffect(() => { localStorage.setItem(storageKey, JSON.stringify(habits)); }, [habits, storageKey]);
 
-  const toggleToday = (habitId: number) => {
-    setHabits((prev) =>
-      prev.map((h) => {
-        if (h.id !== habitId) return h;
-        const already = h.completedDates.includes(today);
-        return {
-          ...h,
-          completedDates: already
-            ? h.completedDates.filter((d) => d !== today)
-            : [...h.completedDates, today],
-        };
-      })
-    );
+  const toggleDay = (habitId: number, date: string) => {
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
+      const has = h.completedDates.includes(date);
+      return { ...h, completedDates: has ? h.completedDates.filter(d => d !== date) : [...h.completedDates, date] };
+    }));
   };
 
-  const openCreate = () => {
-    setEditingHabit(null);
-    setForm({ ...EMPTY_FORM });
-    setIsModalOpen(true);
-  };
-
-  const openEdit = (habit: Habit) => {
-    setEditingHabit(habit);
-    setForm({ name: habit.name, description: habit.description, color: habit.color, emoji: habit.emoji });
-    setIsModalOpen(true);
-  };
-
-  const handleSave = () => {
+  const handleCreate = () => {
     if (!form.name.trim()) return;
-    if (editingHabit) {
-      setHabits((prev) =>
-        prev.map((h) => h.id === editingHabit.id ? { ...h, ...form } : h)
-      );
-    } else {
-      setHabits((prev) => [
-        { id: Date.now(), ...form, completedDates: [], createdAt: new Date().toISOString() },
-        ...prev,
-      ]);
-    }
+    setHabits(prev => [{ id: Date.now(), name: form.name, emoji: form.emoji, color: form.color, completedDates: [], createdAt: new Date().toISOString() }, ...prev]);
     setIsModalOpen(false);
   };
 
-  const handleDelete = (habit: Habit) => {
-    setHabits((prev) => prev.filter((h) => h.id !== habit.id));
-    setDeleteHabit(null);
-  };
+  const handleDelete = (habit: Habit) => { setHabits(prev => prev.filter(h => h.id !== habit.id)); setDeleteHabit(null); };
 
-  const completedToday = habits.filter((h) => h.completedDates.includes(today)).length;
-  const totalHabits = habits.length;
-  const bestStreak = habits.reduce((max, h) => Math.max(max, getStreak(h.completedDates)), 0);
+  const completedToday = habits.filter(h => h.completedDates.includes(today)).length;
+  const bestStreak     = habits.reduce((max, h) => Math.max(max, getStreak(h.completedDates)), 0);
+  const totalRate      = habits.length ? Math.round(habits.reduce((sum, h) => sum + getCompletionRate(h.completedDates, h.createdAt), 0) / habits.length) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAuth />
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-gray-900 dark:text-white" style={{ fontSize: "1.75rem", fontWeight: 800 }}>Mis Hábitos</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{completedToday}/{habits.length} completados hoy</p>
+        </div>
+        <Button variant="primary" size="md" icon={<Plus size={16} />} onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
+          Nuevo hábito
+        </Button>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-gray-900" style={{ fontSize: "1.75rem", fontWeight: 800 }}>
-              Mis Hábitos
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              {totalHabits === 0
-                ? "Crea tu primer hábito y empieza a rastrearlo"
-                : `${completedToday} de ${totalHabits} hábitos completados hoy`}
-            </p>
-          </div>
-          <Button variant="primary" size="md" icon={<Plus size={16} />} onClick={openCreate}>
-            Nuevo hábito
+      {/* KPI Cards */}
+      {habits.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: "Hoy", value: `${completedToday}/${habits.length}`, sub: "completados", icon: <CheckCircle2 size={16} className="text-green-500" />, color: "text-green-600" },
+            { label: "Mejor racha", value: String(bestStreak), sub: "días seguidos", icon: <Flame size={16} className="text-orange-500" />, color: "text-orange-600" },
+            { label: "Cumplimiento", value: `${totalRate}%`, sub: "promedio global", icon: <Trophy size={16} className="text-purple-500" />, color: "text-purple-600" },
+          ].map(s => (
+            <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 flex flex-col gap-1">
+              <div className="flex items-center gap-2">{s.icon}<span className="text-xs text-gray-500 dark:text-gray-400">{s.label}</span></div>
+              <p className={`text-2xl ${s.color}`} style={{ fontWeight: 700 }}>{s.value}</p>
+              <p className="text-xs text-gray-400">{s.sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lista de hábitos */}
+      {habits.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 py-24 text-gray-400">
+          <Target size={48} className="text-gray-300 dark:text-gray-600" />
+          <p className="text-sm">Aún no tienes hábitos registrados</p>
+          <Button variant="secondary" size="sm" icon={<Plus size={14} />} onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
+            Crear primer hábito
           </Button>
         </div>
-
-        {/* KPIs */}
-        {totalHabits > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-              <div className="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Target size={20} className="text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Hábitos activos</p>
-                <p className="text-2xl text-blue-600" style={{ fontWeight: 700 }}>{totalHabits}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-              <div className="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle2 size={20} className="text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Completados hoy</p>
-                <p className="text-2xl text-green-600" style={{ fontWeight: 700 }}>{completedToday}/{totalHabits}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-              <div className="w-11 h-11 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Flame size={20} className="text-orange-500" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Mejor racha activa</p>
-                <p className="text-2xl text-orange-500" style={{ fontWeight: 700 }}>{bestStreak} días</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {habits.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-            <div className="text-6xl mb-4">🎯</div>
-            <p className="text-sm mb-1 text-gray-500" style={{ fontWeight: 500 }}>No tienes hábitos todavía</p>
-            <p className="text-xs text-gray-400 mb-4">Empieza con algo pequeño — un hábito diario cambia todo</p>
-            <Button variant="secondary" size="sm" icon={<Plus size={14} />} onClick={openCreate}>
-              Crear primer hábito
-            </Button>
-          </div>
-        )}
-
-        {/* Lista de hábitos */}
+      ) : (
         <div className="flex flex-col gap-4">
-          {habits.map((habit) => {
-            const c = colorConfig[habit.color];
+          {/* Header días */}
+          <div className="flex items-center gap-3 px-4">
+            <div className="flex-1" />
+            <div className="flex gap-1.5">
+              {last7Days.map(d => (
+                <div key={d.date} className={`w-9 text-center text-xs font-medium ${d.date === today ? "text-blue-600" : "text-gray-400 dark:text-gray-500"}`}>{d.label}</div>
+              ))}
+            </div>
+            <div className="w-7" />
+          </div>
+
+          {habits.map(habit => {
+            const cfg = colorConfig[habit.color];
             const streak = getStreak(habit.completedDates);
+            const rate = getCompletionRate(habit.completedDates, habit.createdAt);
             const doneToday = habit.completedDates.includes(today);
-
             return (
-              <div
-                key={habit.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 group"
-              >
-                <div className="flex items-start gap-4">
-                  {/* Emoji + toggle */}
-                  <div className="flex flex-col items-center gap-2">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${c.bg}`}>
-                      {habit.emoji}
-                    </div>
-                    <button
-                      onClick={() => toggleToday(habit.id)}
-                      className="cursor-pointer transition-transform hover:scale-110"
-                      title={doneToday ? "Marcar como no completado" : "Marcar como completado hoy"}
-                    >
-                      {doneToday
-                        ? <CheckCircle2 size={22} className="text-green-500" />
-                        : <Circle size={22} className="text-gray-300 hover:text-green-400" />
-                      }
-                    </button>
-                  </div>
-
-                  {/* Info */}
+              <div key={habit.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${cfg.bg}`}>{habit.emoji}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="text-gray-900 text-sm" style={{ fontWeight: 600 }}>
-                        {habit.name}
-                      </h3>
-                      {doneToday && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                          ✓ Completado hoy
-                        </span>
-                      )}
-                      {streak > 0 && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Flame size={10} /> {streak} días seguidos
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-900 dark:text-white truncate" style={{ fontWeight: 600 }}>{habit.name}</p>
+                      {streak > 0 && <span className="flex items-center gap-0.5 text-xs text-orange-500 shrink-0"><Flame size={12} />{streak}</span>}
                     </div>
-                    {habit.description && (
-                      <p className="text-xs text-gray-500 mb-3">{habit.description}</p>
-                    )}
-
-                    {/* Últimos 7 días */}
-                    <div className="flex items-center gap-1.5">
-                      {last7.map((day) => {
-                        const done = habit.completedDates.includes(day.str);
-                        const isToday = day.str === today;
-                        return (
-                          <div key={day.str} className="flex flex-col items-center gap-1">
-                            <span className="text-xs text-gray-400">{day.label}</span>
-                            <div
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors ${
-                                done
-                                  ? `${c.dot} text-white`
-                                  : isToday
-                                  ? "border-2 border-dashed border-gray-300 text-gray-300"
-                                  : "bg-gray-100 text-gray-300"
-                              } ${isToday ? "ring-2 ring-offset-1 ring-blue-200" : ""}`}
-                            >
-                              {done ? "✓" : "·"}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${cfg.bar}`} style={{ width: `${rate}%` }} />
+                      </div>
+                      <span className="text-xs text-gray-400 shrink-0">{rate}%</span>
                     </div>
                   </div>
-
-                  {/* Acciones */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => openEdit(habit)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteHabit(habit)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                  <div className="flex gap-1.5 shrink-0">
+                    {last7Days.map(d => {
+                      const done = habit.completedDates.includes(d.date);
+                      const isToday = d.date === today;
+                      return (
+                        <button key={d.date} onClick={() => toggleDay(habit.id, d.date)}
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer border-none ${
+                            done ? `${cfg.bg} ${cfg.text} ${isToday ? `ring-2 ${cfg.ring}` : ""}` : `bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ${isToday ? "ring-2 ring-gray-300 dark:ring-gray-600" : ""}`
+                          }`}>
+                          {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                        </button>
+                      );
+                    })}
                   </div>
+                  <button onClick={() => setDeleteHabit(habit)}
+                    className="w-7 h-7 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer ml-1">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
+                {doneToday && (
+                  <div className={`mt-3 px-3 py-2 rounded-lg text-xs ${cfg.bg} ${cfg.text}`} style={{ fontWeight: 500 }}>
+                    {streak >= 7 ? `🔥 ¡Increíble! ${streak} días seguidos` : streak >= 3 ? `💪 ¡Vas bien! ${streak} días seguidos` : "✅ ¡Completado hoy! Sigue así"}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-      </main>
+      )}
 
-      {/* Modal Crear / Editar */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingHabit ? "Editar hábito" : "Nuevo hábito"}
-        size="md"
+      {/* Modal crear hábito */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nuevo hábito" size="sm"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button variant="primary" size="sm" onClick={handleSave} disabled={!form.name.trim()}>
-              {editingHabit ? "Guardar cambios" : "Crear hábito"}
-            </Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={!form.name.trim()}>Crear hábito</Button>
           </>
-        }
-      >
+        }>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-700">Nombre del hábito *</label>
-            <input
-              type="text"
-              placeholder="Ej: Hacer ejercicio, Leer 20 minutos..."
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-700">Descripción (opcional)</label>
-            <input
-              type="text"
-              placeholder="¿Por qué quieres este hábito?"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-700">Emoji</label>
+          <Input label="Nombre del hábito *" type="text" placeholder="Ej: Leer 30 minutos..."
+            value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700 dark:text-gray-300">Ícono</label>
             <div className="flex flex-wrap gap-2">
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => setForm({ ...form, emoji })}
-                  className={`w-9 h-9 rounded-lg text-lg transition-all cursor-pointer ${
-                    form.emoji === emoji
-                      ? "bg-blue-100 ring-2 ring-blue-400 scale-110"
-                      : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  {emoji}
+              {EMOJIS.map(e => (
+                <button key={e} onClick={() => setForm({ ...form, emoji: e })}
+                  className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center cursor-pointer transition-all border ${form.emoji === e ? "bg-blue-50 dark:bg-blue-950 border-blue-400 scale-110" : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
+                  {e}
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-700">Color</label>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700 dark:text-gray-300">Color</label>
             <div className="flex gap-2">
-              {(Object.keys(colorConfig) as HabitColor[]).map((color) => (
-                <button
-                  key={color}
-                  onClick={() => setForm({ ...form, color })}
-                  className={`w-7 h-7 rounded-full transition-all cursor-pointer border-2 ${colorConfig[color].dot} ${
-                    form.color === color ? "border-gray-800 scale-110" : "border-transparent hover:scale-105"
-                  }`}
-                />
+              {COLORS.map(c => (
+                <button key={c} onClick={() => setForm({ ...form, color: c })}
+                  className={`w-8 h-8 rounded-full cursor-pointer transition-all border-2 ${colorConfig[c].bar} ${form.color === c ? "border-gray-800 dark:border-white scale-110" : "border-transparent hover:scale-105"}`} />
               ))}
             </div>
           </div>
         </div>
       </Modal>
 
-      {/* Modal Eliminar */}
-      <Modal
-        isOpen={!!deleteHabit}
-        onClose={() => setDeleteHabit(null)}
-        title="Eliminar hábito"
-        size="sm"
+      {/* Modal eliminar */}
+      <Modal isOpen={!!deleteHabit} onClose={() => setDeleteHabit(null)} title="Eliminar hábito" size="sm"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setDeleteHabit(null)}>Cancelar</Button>
-            <Button variant="danger" size="sm" onClick={() => deleteHabit && handleDelete(deleteHabit)}>
-              Sí, eliminar
-            </Button>
+            <Button variant="danger" size="sm" onClick={() => deleteHabit && handleDelete(deleteHabit)}>Sí, eliminar</Button>
           </>
-        }
-      >
+        }>
         <div className="flex flex-col items-center gap-4 py-2 text-center">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-950 rounded-full flex items-center justify-center">
             <Trash2 size={22} className="text-red-600" />
           </div>
-          <p className="text-gray-600 text-sm">
-            ¿Eliminar el hábito <strong>"{deleteHabit?.name}"</strong> y todo su historial? Esta acción no se puede deshacer.
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
+            ¿Eliminar el hábito <strong>"{deleteHabit?.name}"</strong>? Perderás todo tu historial y racha.
           </p>
         </div>
       </Modal>
-    </div>
+    </main>
   );
 }

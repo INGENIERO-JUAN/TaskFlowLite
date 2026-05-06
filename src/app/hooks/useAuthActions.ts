@@ -1,13 +1,16 @@
 /**
- * useAuthActions — Lógica de login, register y logout extraída del AuthContext.
+ * useAuthActions — Lógica de autenticación con soporte de Workspaces.
  *
- * Responsabilidades:
- * - Encapsula la lógica de autenticación (login, register, logout)
- * - Gestiona el estado del usuario y su persistencia en localStorage
- * - Expone funciones listas para ser consumidas por AuthProvider
+ * Workspaces:
+ * - Al registrarse el usuario elige: crear workspace nuevo o unirse a uno existente.
+ * - Cada workspace tiene un código único de 6 caracteres (ej: "ABC123").
+ * - Las tareas viven en tasks_workspace_CODIGO — compartidas entre miembros.
+ * - El usuario lleva su workspaceCode en la sesión activa.
  *
- * Uso interno: consumido por AuthProvider en AuthContext.tsx
- * Uso externo: los componentes siguen usando useAuth() como siempre
+ * Storage:
+ *   taskflow_users   → todos los usuarios registrados
+ *   taskflow_user    → sesión activa (incluye workspaceCode)
+ *   workspaces       → { CODIGO: { name, ownerEmail, members: [email] } }
  */
 
 import { useState, useCallback } from "react";
@@ -17,26 +20,67 @@ import { useState, useCallback } from "react";
 export interface AuthUser {
   name: string;
   email: string;
-  company?: string;
+  workspaceCode: string;
+  workspaceName: string;
+  isWorkspaceOwner: boolean;
 }
 
-interface StoredUser extends AuthUser {
+interface StoredUser {
+  name: string;
+  email: string;
   password: string;
+  workspaceCode: string;
+}
+
+export interface Workspace {
+  code: string;
+  name: string;
+  ownerEmail: string;
+  members: string[]; // emails
 }
 
 export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  company?: string;
+  workspaceAction: "create" | "join";
+  workspaceName?: string;   // si crea workspace
+  workspaceCode?: string;   // si se une a workspace
 }
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
-const SESSION_KEY = "taskflow_user";  // usuario logueado activo (sin password)
-const USERS_KEY   = "taskflow_users"; // "base de datos" local (con password)
+const SESSION_KEY    = "taskflow_user";
+const USERS_KEY      = "taskflow_users";
+const WORKSPACES_KEY = "taskflow_workspaces";
 
-// ─── Storage helpers (privados a este módulo) ─────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function generateCode(): string {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function loadWorkspaces(): Record<string, Workspace> {
+  try {
+    const raw = localStorage.getItem(WORKSPACES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveWorkspaces(ws: Record<string, Workspace>): void {
+  localStorage.setItem(WORKSPACES_KEY, JSON.stringify(ws));
+}
+
+function loadUsers(): StoredUser[] {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveUsers(users: StoredUser[]): void {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
 
 function persistSession(user: AuthUser): void {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
@@ -49,23 +93,8 @@ function clearSession(): void {
 export function loadSession(): AuthUser | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-function loadUsers(): StoredUser[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? (JSON.parse(raw) as StoredUser[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users: StoredUser[]): void {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    return raw ? JSON.parse(raw) as AuthUser : null;
+  } catch { return null; }
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -80,70 +109,85 @@ export interface UseAuthActionsReturn {
 export function useAuthActions(): UseAuthActionsReturn {
   const [user, setUser] = useState<AuthUser | null>(loadSession);
 
-  /**
-   * login — Valida credenciales contra localStorage.
-   * Lanza un Error con mensaje legible si el email no existe
-   * o la contraseña no coincide.
-   */
   const login = useCallback(async (email: string, password: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    await new Promise(r => setTimeout(r, 900));
 
     const users = loadUsers();
-    const found = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
+    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!found)               throw new Error("Usuario no registrado.");
+    if (found.password !== password) throw new Error("Contraseña incorrecta.");
 
-    if (!found) {
-      throw new Error("Usuario no registrado.");
-    }
-    if (found.password !== password) {
-      throw new Error("Contraseña incorrecta.");
-    }
+    const workspaces = loadWorkspaces();
+    const ws = workspaces[found.workspaceCode];
+    if (!ws) throw new Error("El workspace de este usuario ya no existe.");
 
     const sessionUser: AuthUser = {
       name: found.name,
       email: found.email,
-      company: found.company,
+      workspaceCode: found.workspaceCode,
+      workspaceName: ws.name,
+      isWorkspaceOwner: ws.ownerEmail === found.email,
     };
 
     persistSession(sessionUser);
     setUser(sessionUser);
   }, []);
 
-  /**
-   * register — Crea un usuario nuevo.
-   * Impide emails duplicados e inicia sesión automáticamente.
-   */
   const register = useCallback(async (data: RegisterData) => {
-    await new Promise((resolve) => setTimeout(resolve, 1100));
+    await new Promise(r => setTimeout(r, 1100));
 
     const users = loadUsers();
-    const exists = users.some(
-      (u) => u.email.toLowerCase() === data.email.toLowerCase()
-    );
+    const exists = users.some(u => u.email.toLowerCase() === data.email.toLowerCase());
+    if (exists) throw new Error("Este email ya está registrado. ¿Quieres iniciar sesión?");
 
-    if (exists) {
-      throw new Error(
-        "Este email ya está registrado. ¿Quieres iniciar sesión?"
-      );
+    const workspaces = loadWorkspaces();
+    let workspaceCode: string;
+    let workspaceName: string;
+
+    if (data.workspaceAction === "create") {
+      // Crear workspace nuevo con código único
+      if (!data.workspaceName?.trim()) throw new Error("El nombre del workspace es obligatorio.");
+      do { workspaceCode = generateCode(); } while (workspaces[workspaceCode]);
+      workspaceName = data.workspaceName.trim();
+
+      workspaces[workspaceCode] = {
+        code: workspaceCode,
+        name: workspaceName,
+        ownerEmail: data.email,
+        members: [data.email],
+      };
+    } else {
+      // Unirse a workspace existente
+      const code = data.workspaceCode?.trim().toUpperCase() ?? "";
+      if (!code) throw new Error("Debes ingresar el código del workspace.");
+      if (!workspaces[code]) throw new Error(`No existe ningún workspace con el código "${code}".`);
+      workspaceCode = code;
+      workspaceName = workspaces[code].name;
+      workspaces[code].members.push(data.email);
     }
 
-    const newUser: StoredUser = { ...data };
+    saveWorkspaces(workspaces);
+
+    const newUser: StoredUser = {
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      workspaceCode,
+    };
     saveUsers([...users, newUser]);
 
     const sessionUser: AuthUser = {
-      name: newUser.name,
-      email: newUser.email,
-      company: newUser.company,
+      name: data.name,
+      email: data.email,
+      workspaceCode,
+      workspaceName,
+      isWorkspaceOwner: data.workspaceAction === "create",
     };
 
     persistSession(sessionUser);
     setUser(sessionUser);
   }, []);
 
-  /**
-   * logout — Limpia la sesión de localStorage y resetea el estado local.
-   */
   const logout = useCallback(() => {
     clearSession();
     setUser(null);
