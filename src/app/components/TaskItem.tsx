@@ -86,8 +86,6 @@ export function TaskItem({ task, openMenuId, onToggleStatus, onOpenDetail, onEdi
         <button
           onClick={() => { onToggleMenu(task.id); }}
           aria-label="Más opciones de la tarea"
-          aria-haspopup="true"
-          aria-expanded={openMenuId === task.id}
           className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer border-none bg-transparent"
         >
           <MoreVertical size={16} />
