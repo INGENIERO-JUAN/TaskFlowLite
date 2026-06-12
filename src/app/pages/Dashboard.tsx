@@ -9,16 +9,16 @@
  *  - Badge y Tooltip integrados como componentes propios
  */
 import React, { useState, useEffect } from "react";
-import { useNavigate }     from "react-router";
+
 import {
   CheckSquare, Clock, CheckCircle2, Plus, Filter,
   Search, Users, Copy, CheckCheck,
 } from "lucide-react";
 import { toast }                   from "sonner";
-import { KPICard }                 from "../components/ui/Card";
-import { Button }                  from "../components/ui/Button";
-import { Badge }                   from "../components/ui/Badge";
-import { Tooltip }                 from "../components/ui/Tooltip";
+import { KPICard }                 from "../components/ui/card";
+import { Button }                  from "../components/ui/button";
+import { Badge }                   from "../components/ui/badge";
+import { Tooltip }                 from "../components/ui/tooltip";
 import { TaskItem }                from "../components/TaskItem";
 import { TaskDetailPanel }         from "../components/TaskDetailPanel";
 import { TaskModals }              from "../components/TaskModals";
@@ -28,7 +28,6 @@ import { useTasks }                from "../hooks/useTasks";
 import { useRegisteredUsers }      from "../hooks/useRegisteredUsers";
 
 export function Dashboard() {
-  const navigate        = useNavigate();
   const { user }        = useAuth();
   const registeredUsers = useRegisteredUsers();
   const [codeCopied, setCodeCopied] = useState(false);
@@ -60,13 +59,13 @@ export function Dashboard() {
 
   const handleCopyCode = () => {
     if (!user?.workspaceCode) return;
-    navigator.clipboard.writeText(user.workspaceCode).then(() => {
+    void navigator.clipboard.writeText(user.workspaceCode).then(() => {
       setCodeCopied(true);
-      setTimeout(() => setCodeCopied(false), 2000);
+      setTimeout(() => { setCodeCopied(false); }, 2000);
     });
   };
 
-  const firstName = user?.name?.split(" ")[0] ?? "Usuario";
+  const firstName = user?.name.split(" ")[0] ?? "Usuario";
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
@@ -115,7 +114,7 @@ export function Dashboard() {
               </Tooltip>
 
               {registeredUsers.length > 0 && (
-                <Tooltip content={`${registeredUsers.length} miembro${registeredUsers.length !== 1 ? "s" : ""} en este workspace`}>
+                <Tooltip content={`${registeredUsers.length.toString()} miembro${registeredUsers.length !== 1 ? "s" : ""} en este workspace`}>
                   <Badge variant="default">
                     <Users size={11} className="mr-1" />{registeredUsers.length}
                   </Badge>
@@ -139,7 +138,7 @@ export function Dashboard() {
           value={totalTasks}
           icon={<CheckSquare size={18} />}
           color="blue"
-          change={`${inProgressTasks} en progreso`}
+          change={`${inProgressTasks.toString()} en progreso`}
           changeType="neutral"
         />
         <KPICard
@@ -147,7 +146,7 @@ export function Dashboard() {
           value={pendingTasks}
           icon={<Clock size={18} />}
           color="yellow"
-          change={`${totalTasks > 0 ? Math.round((pendingTasks / totalTasks) * 100) : 0}% sin iniciar`}
+          change={`${(totalTasks > 0 ? Math.round((pendingTasks / totalTasks) * 100) : 0).toString()}% sin iniciar`}
           changeType="neutral"
         />
         <KPICard
@@ -155,7 +154,7 @@ export function Dashboard() {
           value={completedTasks}
           icon={<CheckCircle2 size={18} />}
           color="green"
-          change={`${progressPct}% de progreso total`}
+          change={`${progressPct.toString()}% de progreso total`}
           changeType="up"
         />
       </div>
@@ -171,7 +170,7 @@ export function Dashboard() {
         <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
           <div
             className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
+            style={{ width: `${progressPct.toString()}%` }}
           />
         </div>
         <div className="flex items-center gap-6 mt-3 text-xs text-gray-400 dark:text-gray-500">
@@ -201,7 +200,7 @@ export function Dashboard() {
               type="text"
               placeholder="Buscar tareas o responsables..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); }}
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -216,7 +215,7 @@ export function Dashboard() {
               ] as [typeof filterStatus, string][]).map(([val, label]) => (
                 <button
                   key={val}
-                  onClick={() => setFilterStatus(val)}
+                  onClick={() => { setFilterStatus(val); }}
                   className={`px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer border-none ${
                     filterStatus === val
                       ? "bg-blue-600 text-white"
@@ -257,8 +256,8 @@ export function Dashboard() {
                 onOpenDetail={setDetailTask}
                 onEdit={openEditModal}
                 onDeletePrompt={task => { setDeleteModalTask(task); setOpenMenuId(null); }}
-                onToggleMenu={id => setOpenMenuId(openMenuId === id ? null : id)}
-                onCloseMenu={() => setOpenMenuId(null)}
+                onToggleMenu={id => { setOpenMenuId(openMenuId === id ? null : id); }}
+                onCloseMenu={() => { setOpenMenuId(null); }}
               />
             ))}
           </ul>
@@ -276,7 +275,7 @@ export function Dashboard() {
       {detailTask && (
         <TaskDetailPanel
           task={detailTask}
-          onClose={() => setDetailTask(null)}
+          onClose={() => { setDetailTask(null); }}
           onEdit={task => { openEditModal(task); setDetailTask(null); }}
           onDelete={task => { setDeleteModalTask(task); setDetailTask(null); }}
           onAddComment={handleAddComment}
@@ -289,17 +288,17 @@ export function Dashboard() {
         editingTask={editingTask}
         form={form}
         setForm={setForm}
-        onSave={handleSaveTask}
-        onCloseModal={() => setIsModalOpen(false)}
+        onSave={() => { void handleSaveTask(); }}
+        onCloseModal={() => { setIsModalOpen(false); }}
         registeredUsers={registeredUsers}
         evidenceTask={evidenceTask}
         evidenceForm={evidenceForm}
         setEvidenceForm={setEvidenceForm}
         onConfirmEvidence={handleConfirmEvidence}
-        onCloseEvidence={() => setEvidenceTask(null)}
+        onCloseEvidence={() => { setEvidenceTask(null); }}
         deleteModalTask={deleteModalTask}
-        onConfirmDelete={handleDeleteTask}
-        onCloseDelete={() => setDeleteModalTask(null)}
+        onConfirmDelete={() => { if (deleteModalTask) void handleDeleteTask(deleteModalTask); }}
+        onCloseDelete={() => { setDeleteModalTask(null); }}
       />
     </main>
   );

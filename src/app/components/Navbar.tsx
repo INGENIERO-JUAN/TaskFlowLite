@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Menu, X, Zap, LayoutDashboard, Sun, Moon } from "lucide-react";
-import { Button }         from "./ui/Button";
+import { Button }         from "./ui/button";
 import { useAuth }        from "../hooks/useAuth";
 import { useThemeStore }  from "../stores/useThemeStore";
 
@@ -20,9 +20,9 @@ export function Navbar() {
   const { isDark, toggleTheme }       = useThemeStore();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => { setScrolled(window.scrollY > 20); };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => { window.removeEventListener("scroll", handleScroll); };
   }, []);
 
   const navLinks = [
@@ -75,16 +75,16 @@ export function Navbar() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   Hola, <strong className="text-gray-800 dark:text-gray-100">{user?.name.split(" ")[0]}</strong>
                 </span>
-                <Button variant="primary" size="sm" icon={<LayoutDashboard size={15} />} onClick={() => navigate("/dashboard")}>
+                <Button variant="primary" size="sm" icon={<LayoutDashboard size={15} />} onClick={() => { void navigate("/dashboard"); }}>
                   Ir al Dashboard
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
+                <Button variant="ghost" size="sm" onClick={() => { void navigate("/login"); }}>
                   Iniciar sesión
                 </Button>
-                <Button variant="primary" size="sm" onClick={() => navigate("/register")}>
+                <Button variant="primary" size="sm" onClick={() => { void navigate("/register"); }}>
                   Comenzar gratis
                 </Button>
               </>
@@ -99,7 +99,7 @@ export function Navbar() {
             </button>
             <button
               className="text-gray-600 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-none bg-transparent"
-              onClick={() => setMobileOpen(!mobileOpen)}
+              onClick={() => { setMobileOpen(!mobileOpen); }}
               aria-label="Toggle menu">
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -113,22 +113,22 @@ export function Navbar() {
           {navLinks.map(link => (
             <a key={link.label} href={link.href}
               className="text-sm text-gray-700 dark:text-gray-300 py-2 no-underline"
-              onClick={() => setMobileOpen(false)}>
+              onClick={() => { setMobileOpen(false); }}>
               {link.label}
             </a>
           ))}
           <div className="flex flex-col gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
             {isAuthenticated ? (
               <Button variant="primary" size="sm" fullWidth icon={<LayoutDashboard size={15} />}
-                onClick={() => { navigate("/dashboard"); setMobileOpen(false); }}>
+                onClick={() => { void navigate("/dashboard"); setMobileOpen(false); }}>
                 Ir al Dashboard
               </Button>
             ) : (
               <>
-                <Button variant="outline" size="sm" fullWidth onClick={() => { navigate("/login"); setMobileOpen(false); }}>
+                <Button variant="outline" size="sm" fullWidth onClick={() => { void navigate("/login"); setMobileOpen(false); }}>
                   Iniciar sesión
                 </Button>
-                <Button variant="primary" size="sm" fullWidth onClick={() => { navigate("/register"); setMobileOpen(false); }}>
+                <Button variant="primary" size="sm" fullWidth onClick={() => { void navigate("/register"); setMobileOpen(false); }}>
                   Comenzar gratis
                 </Button>
               </>

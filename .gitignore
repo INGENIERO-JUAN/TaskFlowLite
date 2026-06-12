@@ -12,7 +12,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# env files
+# env files — el .env real NUNCA se commitea
 .env
 .env.*
 !.env.example
@@ -26,3 +26,8 @@ Thumbs.db
 # cache
 .cache/
 .eslintcache
+
+# Testing
+coverage/
+playwright-report/
+test-results/

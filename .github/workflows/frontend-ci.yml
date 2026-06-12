@@ -1,0 +1,93 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# frontend-ci.yml — Pipeline de Integración Continua y Despliegue Continuo
+#
+# Disparadores:
+#   - push a main        → CI completo + deploy automático a Render
+#   - pull_request a main → CI completo (sin deploy — PRs externos no alteran producción)
+#
+# Pasos en orden estricto:
+#   1. TypeScript typecheck
+#   2. ESLint lint
+#   3. Vitest (pruebas unitarias + cobertura)
+#   4. Playwright E2E (Chromium)
+#   5. Deploy a Render (solo en push real a main)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: "🔍 Typecheck · Lint · Tests · E2E"
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout código fuente
+        uses: actions/checkout@v4
+
+      # ── Setup Node.js ─────────────────────────────────────────────────────
+      - name: Configurar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      # ── Instalar dependencias ─────────────────────────────────────────────
+      - name: Instalar dependencias (npm ci)
+        run: npm ci
+
+      # ── Paso 1: TypeScript typecheck ──────────────────────────────────────
+      - name: "🔷 TypeScript — Verificación de tipos"
+        run: npm run typecheck
+
+      # ── Paso 2: ESLint ────────────────────────────────────────────────────
+      - name: "🔶 ESLint — Análisis de código"
+        run: npm run lint
+
+      # ── Paso 3: Vitest — Pruebas unitarias ───────────────────────────────
+      - name: "🧪 Vitest — Pruebas unitarias con cobertura"
+        run: npm run test -- --coverage
+
+      # ── Paso 4: Playwright — Instalar browsers ───────────────────────────
+      - name: "🎭 Playwright — Instalar Chromium"
+        run: npx playwright install chromium --with-deps
+
+      # ── Paso 4: Playwright — Ejecutar E2E ────────────────────────────────
+      - name: "🎭 Playwright — Pruebas End-to-End"
+        run: npm run test:e2e
+        env:
+          # La URL base para E2E en CI (webServer arranca en el puerto 5173)
+          PLAYWRIGHT_BASE_URL: "http://localhost:5173"
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://taskflow-api-demo.onrender.com/api' }}
+
+      # ── Publicar reporte de Playwright en caso de fallo ──────────────────
+      - name: Subir reporte de Playwright (en caso de fallo)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── Despliegue a Render — solo en push real a main ────────────────────────
+  deploy:
+    name: "🚀 Deploy → Render"
+    needs: ci
+    runs-on: ubuntu-latest
+    # Solo se ejecuta en push a main (no en pull_request)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Disparar deploy en Render via webhook
+        run: |
+          curl --silent --fail --show-error \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        env:
+          # RENDER_DEPLOY_HOOK debe estar registrado en GitHub → Settings → Secrets
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}

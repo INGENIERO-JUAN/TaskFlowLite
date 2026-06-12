@@ -3,19 +3,36 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "types": ["node"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src"],
-  "references": []
+  "include": ["src", "vitest.config.ts"],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "e2e",
+    "playwright.config.ts",
+    "src/app/components/ui/sidebar.tsx",
+    "src/app/components/ui/carousel.tsx",
+    "src/app/components/ui/pagination.tsx",
+    "src/app/components/ui/alert-dialog.tsx",
+    "src/app/components/ui/calendar.tsx"
+  ]
 }

@@ -23,7 +23,7 @@ export function NavbarAuth() {
   const handleLogout = () => {
     logout();
     toast.success("Sesión cerrada correctamente");
-    navigate("/login");
+    void navigate("/login");
   };
 
   const displayName  = user?.name  ?? "Usuario";
@@ -43,7 +43,7 @@ export function NavbarAuth() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => { void navigate("/dashboard"); }}>
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap size={16} className="text-white" />
             </div>
@@ -62,7 +62,7 @@ export function NavbarAuth() {
             {navItems.map(item => {
               const isActive = location.pathname === item.path;
               return (
-                <button key={item.label} onClick={() => navigate(item.path)}
+                <button key={item.label} onClick={() => { void navigate(item.path); }}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer border-none ${
                     isActive
                       ? "text-blue-600 bg-blue-50 dark:bg-blue-950"
@@ -98,7 +98,7 @@ export function NavbarAuth() {
 
             {/* Dropdown usuario */}
             <div className="relative">
-              <button onClick={() => setDropdownOpen(!dropdownOpen)}
+              <button onClick={() => { setDropdownOpen(!dropdownOpen); }}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer border-none bg-transparent"
                 aria-expanded={dropdownOpen} aria-haspopup="true">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs shrink-0" style={{ fontWeight: 600 }}>
@@ -113,7 +113,7 @@ export function NavbarAuth() {
 
               {dropdownOpen && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                  <div className="fixed inset-0 z-10" onClick={() => { setDropdownOpen(false); }} />
                   <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 z-20 py-1 overflow-hidden">
 
                     {/* Info usuario + workspace */}
@@ -137,14 +137,14 @@ export function NavbarAuth() {
                     {/* Nav móvil */}
                     <div className="md:hidden border-b border-gray-50 dark:border-gray-800 py-1">
                       {navItems.map(item => (
-                        <button key={item.label} onClick={() => { navigate(item.path); setDropdownOpen(false); }}
+                        <button key={item.label} onClick={() => { void navigate(item.path); setDropdownOpen(false); }}
                           className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer bg-transparent border-none">
                           {item.icon}{item.label}
                         </button>
                       ))}
                     </div>
 
-                    <button onClick={() => { navigate("/profile"); setDropdownOpen(false); }}
+                    <button onClick={() => { void navigate("/profile"); setDropdownOpen(false); }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer bg-transparent border-none">
                       <User size={15} className="text-gray-400" />Mi perfil
                     </button>

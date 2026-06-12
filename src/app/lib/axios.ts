@@ -2,16 +2,17 @@
  * axios.ts — Instancia base de Axios para TaskFlowLite.
  *
  * Configuración:
- *  - baseURL: apunta al backend (configurable via env variable)
+ *  - baseURL: apunta al backend (configurable via VITE_API_URL)
  *  - withCredentials: envía cookies de sesión automáticamente
- *  - Interceptor de request: adjunta el token Bearer desde localStorage si existe
- *  - Interceptor de response: normaliza errores y los relanza como Error estándar
+ *  - Interceptor de request: adjunta el token Bearer desde localStorage
+ *  - Interceptor de response (401): triple purga síncrona + redirect a /login
  */
 
-import axios from "axios";
+import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
 
 // URL base del backend. En producción se sobreescribe con VITE_API_URL.
-const BASE_URL = import.meta.env.VITE_API_URL ?? "https://taskflow-api-demo.onrender.com/api";
+const BASE_URL: string =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? "https://taskflow-api-demo.onrender.com/api";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -26,13 +27,13 @@ export const apiClient = axios.create({
 // ── Interceptor de REQUEST ────────────────────────────────────────────────────
 // Adjunta el token de autenticación si está disponible en localStorage.
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     try {
       const raw = localStorage.getItem("taskflow_user");
       if (raw) {
         const user = JSON.parse(raw) as { token?: string };
         if (user.token) {
-          config.headers["Authorization"] = `Bearer ${user.token}`;
+          config.headers.Authorization = `Bearer ${user.token}`;
         }
       }
     } catch {
@@ -40,22 +41,52 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: unknown) => Promise.reject(error instanceof Error ? error : new Error(String(error)))
 );
 
-// ── Interceptor de RESPONSE ───────────────────────────────────────────────────
-// Extrae el mensaje de error del backend y lo relanza como Error estándar.
+// ── Interceptor de RESPONSE — manejo de 401 Unauthorized ─────────────────────
+// Cuando el servidor devuelve 401 (sesión expirada o inválida):
+//  1. Notifica silenciosamente al backend para destruir la cookie de sesión
+//  2. Limpia TODO el almacenamiento persistente del cliente
+//  3. Fuerza redirección a /login reiniciando el estado de la app en RAM
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response: AxiosResponse) => response,
+  async (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Paso 1 — Destruir cookie de sesión en el backend (fire-and-forget)
+      try {
+        await axios.post(
+          `${BASE_URL}/auth/logout`,
+          {},
+          { withCredentials: true }
+        );
+      } catch {
+        // Ignorar errores del logout — la sesión ya está inválida
+      }
+
+      // Paso 2 — Purga completa del almacenamiento del cliente
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Paso 3 — Redirección forzada que vacía el estado en RAM (React + Zustand)
+      // Usar window.location.href en lugar de navigate() para forzar recarga completa
+      // y garantizar que el Store de Zustand se reinicie a cero
+      window.location.href = "/login";
+
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+
+    // Para otros errores: extraer mensaje del backend y relanzar
     if (axios.isAxiosError(error)) {
+      const data = error.response?.data as Record<string, unknown> | undefined;
       const serverMessage =
-        error.response?.data?.message ??
-        error.response?.data?.error ??
+        (data?.message as string | undefined) ??
+        (data?.error as string | undefined) ??
         error.message;
       return Promise.reject(new Error(serverMessage));
     }
-    return Promise.reject(error);
+
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
   }
 );
 

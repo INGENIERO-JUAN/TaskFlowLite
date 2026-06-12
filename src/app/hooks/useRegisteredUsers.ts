@@ -10,6 +10,20 @@ export interface RegisteredUser {
   email: string;
 }
 
+interface StoredUser {
+  name: string;
+  email: string;
+  workspaceCode: string;
+  password: string;
+}
+
+interface WorkspaceRecord {
+  code: string;
+  name: string;
+  ownerEmail: string;
+  members: string[];
+}
+
 export function useRegisteredUsers(): RegisteredUser[] {
   try {
     const session = loadSession();
@@ -18,14 +32,15 @@ export function useRegisteredUsers(): RegisteredUser[] {
     // Leer workspaces
     const wsRaw = localStorage.getItem("taskflow_workspaces");
     if (!wsRaw) return [];
-    const workspaces = JSON.parse(wsRaw);
+    const workspaces = JSON.parse(wsRaw) as Record<string, WorkspaceRecord>;
     const ws = workspaces[session.workspaceCode];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!ws) return [];
 
     // Leer usuarios y filtrar solo los del workspace
     const usersRaw = localStorage.getItem("taskflow_users");
     if (!usersRaw) return [];
-    const users: any[] = JSON.parse(usersRaw);
+    const users = JSON.parse(usersRaw) as StoredUser[];
 
     return users
       .filter(u => ws.members.includes(u.email))

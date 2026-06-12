@@ -25,13 +25,13 @@ export function TaskItem({ task, openMenuId, onToggleStatus, onOpenDetail, onEdi
   const sCfg        = statusConfig[task.status];
   const overdue     = isOverdue(task.dueDate, task.status);
   const hasEvidence = !!task.evidence;
-  const comments    = task.comments ?? [];
+  const comments    = task.comments;
 
   return (
     <li className="px-6 py-4 flex items-start gap-4 hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors group">
       {/* Checkbox */}
       <button
-        onClick={() => onToggleStatus(task)}
+        onClick={() => { onToggleStatus(task); }}
         className={`mt-0.5 w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
           task.status === "completada"
             ? "bg-green-500 border-green-500"
@@ -43,7 +43,7 @@ export function TaskItem({ task, openMenuId, onToggleStatus, onOpenDetail, onEdi
       </button>
 
       {/* Contenido */}
-      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetail(task)}>
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { onOpenDetail(task); }}>
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <p className={`text-sm font-medium ${task.status === "completada" ? "line-through text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-white"}`}>
             {task.title}
@@ -84,7 +84,7 @@ export function TaskItem({ task, openMenuId, onToggleStatus, onOpenDetail, onEdi
       {/* Menú contextual */}
       <div className="relative">
         <button
-          onClick={() => onToggleMenu(task.id)}
+          onClick={() => { onToggleMenu(task.id); }}
           className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer border-none bg-transparent"
         >
           <MoreVertical size={16} />
@@ -97,7 +97,7 @@ export function TaskItem({ task, openMenuId, onToggleStatus, onOpenDetail, onEdi
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer bg-transparent border-none">
                 <Eye size={14} className="text-gray-400" />Ver detalle
               </button>
-              <button onClick={() => onEdit(task)}
+              <button onClick={() => { onEdit(task); }}
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer bg-transparent border-none">
                 <Edit3 size={14} className="text-gray-400" />Editar
               </button>

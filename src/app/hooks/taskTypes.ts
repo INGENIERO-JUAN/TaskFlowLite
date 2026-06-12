@@ -33,14 +33,14 @@ export interface Task {
 }
 
 export const priorityConfig: Record<Priority, { label: string; color: string; bg: string; dot: string }> = {
-  alta:  { label: "Alta",  color: "text-red-700 dark:text-red-400",    bg: "bg-red-50 dark:bg-red-950",       dot: "bg-red-500"    },
+  alta:  { label: "Alta",  color: "text-red-700 dark:text-red-400",       bg: "bg-red-50 dark:bg-red-950",       dot: "bg-red-500"    },
   media: { label: "Media", color: "text-yellow-700 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-950", dot: "bg-yellow-500" },
-  baja:  { label: "Baja",  color: "text-green-700 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950",  dot: "bg-green-500"  },
+  baja:  { label: "Baja",  color: "text-green-700 dark:text-green-400",   bg: "bg-green-50 dark:bg-green-950",   dot: "bg-green-500"  },
 };
 
 export const statusConfig: Record<Status, { label: string; color: string; bg: string }> = {
-  pendiente:     { label: "Pendiente",   color: "text-gray-700 dark:text-gray-300",  bg: "bg-gray-100 dark:bg-gray-800"  },
-  "en progreso": { label: "En progreso", color: "text-blue-700 dark:text-blue-400",  bg: "bg-blue-100 dark:bg-blue-950"  },
+  pendiente:     { label: "Pendiente",   color: "text-gray-700 dark:text-gray-300",   bg: "bg-gray-100 dark:bg-gray-800"   },
+  "en progreso": { label: "En progreso", color: "text-blue-700 dark:text-blue-400",   bg: "bg-blue-100 dark:bg-blue-950"   },
   completada:    { label: "Completada",  color: "text-green-700 dark:text-green-400", bg: "bg-green-100 dark:bg-green-950" },
 };
 
@@ -54,13 +54,28 @@ export const INITIAL_TASKS: Task[] = [
   { id: 7, title: "Diseñar onboarding para nuevos usuarios", description: "Crear flujo de bienvenida e introducción al producto.",         priority: "alta",  status: "pendiente",   dueDate: "2026-03-25", assignee: "", comments: [] },
 ];
 
+// ─── Tipos intermedios para sanitización ──────────────────────────────────────
+
+interface RawTask {
+  id?: unknown;
+  title?: unknown;
+  description?: unknown;
+  priority?: unknown;
+  status?: unknown;
+  dueDate?: unknown;
+  assignee?: unknown;
+  comments?: unknown;
+  evidence?: unknown;
+  [key: string]: unknown;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-export function sanitizeTasks(raw: any[]): Task[] {
+export function sanitizeTasks(raw: RawTask[]): Task[] {
   return raw.map(t => ({
-    ...t,
-    comments: Array.isArray(t.comments) ? t.comments : [],
-    evidence: t.evidence ?? undefined,
+    ...(t as Omit<Task, "comments" | "evidence">),
+    comments: Array.isArray(t.comments) ? (t.comments as Comment[]) : [],
+    evidence: t.evidence !== undefined ? (t.evidence as Evidence) : undefined,
   }));
 }
 
@@ -73,10 +88,10 @@ export function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
   if (m < 1)  return "Ahora";
-  if (m < 60) return `Hace ${m} min`;
+  if (m < 60) return `Hace ${m.toString()} min`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `Hace ${h}h`;
-  return `Hace ${Math.floor(h / 24)} días`;
+  if (h < 24) return `Hace ${h.toString()}h`;
+  return `Hace ${Math.floor(h / 24).toString()} días`;
 }
 
 export function isOverdue(d: string, s: Status) {

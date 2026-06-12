@@ -5,7 +5,7 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import { Zap, Home, ArrowLeft, SearchX } from "lucide-react";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
 
 export function NotFound() {
@@ -47,11 +47,11 @@ export function NotFound() {
       {/* Acciones */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         <Button variant="primary" size="md" icon={<Home size={16} />}
-          onClick={() => navigate(isAuthenticated ? "/dashboard" : "/")}>
+          onClick={() => { void navigate(isAuthenticated ? "/dashboard" : "/"); }}>
           {isAuthenticated ? "Ir al Dashboard" : "Ir al inicio"}
         </Button>
         <Button variant="ghost" size="md" icon={<ArrowLeft size={16} />}
-          onClick={() => navigate(-1)}>
+          onClick={() => { void navigate(-1); }}>
           Volver atrás
         </Button>
       </div>
@@ -64,7 +64,7 @@ export function NotFound() {
             ? [["Dashboard", "/dashboard"], ["Notas", "/notes"], ["Hábitos", "/habits"], ["Reportes", "/reports"]]
             : [["Inicio", "/"], ["Iniciar sesión", "/login"], ["Registrarse", "/register"]]
           ).map(([label, path]) => (
-            <button key={path} onClick={() => navigate(path)}
+            <button key={path} onClick={() => { void navigate(path); }}
               className="px-3 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 transition-colors cursor-pointer">
               {label}
             </button>

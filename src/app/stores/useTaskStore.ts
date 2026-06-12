@@ -58,8 +58,11 @@ function getStorageKey(code: string) {
 function loadFromStorage(code: string): Task[] {
   try {
     const raw = localStorage.getItem(getStorageKey(code));
-    return raw ? sanitizeTasks(JSON.parse(raw)) : INITIAL_TASKS;
-  } catch { return INITIAL_TASKS; }
+    if (!raw) return INITIAL_TASKS;
+    return sanitizeTasks(JSON.parse(raw) as Record<string, unknown>[]);
+  } catch {
+    return INITIAL_TASKS;
+  }
 }
 
 function saveToStorage(code: string, tasks: Task[]): void {
@@ -74,20 +77,12 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
   error: null,
   workspaceCode: null,
 
-  // ── fetchTasks ─────────────────────────────────────────────────────────────
   fetchTasks: async (workspaceCode) => {
     set({ isLoading: true, error: null, workspaceCode });
     try {
-      // Intentar cargar desde API
-      let tasks: Task[];
-      try {
-        const res = await apiGet<Task[]>(`/tasks?workspace=${workspaceCode}`);
-        tasks = sanitizeTasks(res);
-        saveToStorage(workspaceCode, tasks); // sincronizar con localStorage
-      } catch (apiErr) {
-        // Fallback a localStorage si la API no responde
-        tasks = loadFromStorage(workspaceCode);
-      }
+      const res = await apiGet<Task[]>(`/tasks?workspace=${workspaceCode}`);
+      const tasks = sanitizeTasks(res as unknown as Record<string, unknown>[]);
+      saveToStorage(workspaceCode, tasks);
       set({ tasks, isLoading: false });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al cargar tareas";
@@ -112,7 +107,9 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
       const created = await apiPost<Task>("/tasks", { ...taskData, workspaceCode });
       // Reemplazar ID temporal con el real del servidor
       set(s => {
-        const tasks = s.tasks.map(t => t.id === tempId ? { ...created, comments: created.comments ?? [] } : t);
+        const tasks = s.tasks.map(t =>
+          t.id === tempId ? { ...created, comments: created.comments } : t
+        );
         saveToStorage(workspaceCode, tasks);
         return { tasks };
       });
@@ -132,7 +129,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     });
 
     try {
-      await apiPut(`/tasks/${id}`, changes);
+      await apiPut(`/tasks/${id.toString()}`, changes);
     } catch {
       // Cambio ya aplicado localmente
     }
@@ -149,7 +146,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     });
 
     try {
-      await apiDelete(`/tasks/${id}`);
+      await apiDelete(`/tasks/${id.toString()}`);
     } catch {
       // Eliminación ya aplicada localmente
     }
@@ -165,7 +162,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     };
     set(s => {
       const tasks = s.tasks.map(t =>
-        t.id === taskId ? { ...t, comments: [...(t.comments ?? []), comment] } : t
+        t.id === taskId ? { ...t, comments: [...t.comments, comment] } : t
       );
       saveToStorage(workspaceCode, tasks);
       return { tasks };
@@ -176,8 +173,8 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
   completeTask: (taskId, evidence) => {
     const workspaceCode = get().workspaceCode ?? "default";
     set(s => {
-      const tasks = s.tasks.map(t =>
-        t.id === taskId ? { ...t, status: "completada" as Status, evidence } : t
+      const tasks: Task[] = s.tasks.map(t =>
+        t.id === taskId ? { ...t, status: "completada", evidence } : t
       );
       saveToStorage(workspaceCode, tasks);
       return { tasks };
@@ -188,8 +185,8 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
   revertTask: (taskId) => {
     const workspaceCode = get().workspaceCode ?? "default";
     set(s => {
-      const tasks = s.tasks.map(t =>
-        t.id === taskId ? { ...t, status: "pendiente" as Status, evidence: undefined } : t
+      const tasks: Task[] = s.tasks.map(t =>
+        t.id === taskId ? { ...t, status: "pendiente", evidence: undefined } : t
       );
       saveToStorage(workspaceCode, tasks);
       return { tasks };
@@ -197,5 +194,5 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
   },
 
   // ── reset ──────────────────────────────────────────────────────────────────
-  reset: () => set({ tasks: [], isLoading: false, error: null, workspaceCode: null }),
+  reset: () => { set({ tasks: [], isLoading: false, error: null, workspaceCode: null }); },
 }));

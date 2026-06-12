@@ -11,11 +11,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Mail, Lock, Zap, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "../components/ui/Button";
-import { Input }  from "../components/ui/Input";
+import { Button } from "../components/ui/button";
+import { Input }  from "../components/ui/input";
 import { useAuth } from "../hooks/useAuth";
 
 const loginSchema = z.object({
+  /* eslint-disable-next-line @typescript-eslint/no-deprecated */
   email:    z.string().min(1, "El email es obligatorio").email("Introduce un email válido"),
   password: z.string().min(1, "La contraseña es obligatoria").min(6, "Mínimo 6 caracteres"),
 });
@@ -40,7 +41,7 @@ export function Login() {
     try {
       await login(data.email, data.password);
       toast.success("¡Bienvenido de vuelta!");
-      navigate("/dashboard");
+      void navigate("/dashboard");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Error al iniciar sesión.";
       setError("root", { message: msg });
@@ -111,7 +112,7 @@ export function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+          <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="flex flex-col gap-5" noValidate>
             <Input
               label="Correo electrónico"
               type="email"
@@ -127,7 +128,7 @@ export function Login() {
               placeholder="••••••••"
               leftIcon={<Lock size={16} />}
               rightIcon={
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                <button type="button" onClick={() => { setShowPassword(!showPassword); }}
                   className="cursor-pointer text-gray-400 hover:text-gray-600"
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

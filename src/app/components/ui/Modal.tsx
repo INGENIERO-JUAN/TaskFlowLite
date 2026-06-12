@@ -33,7 +33,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md", footer }:
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     if (isOpen) window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    return () => { window.removeEventListener("keydown", handleKey); };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

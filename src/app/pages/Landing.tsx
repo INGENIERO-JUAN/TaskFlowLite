@@ -13,8 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Navbar }            from "../components/Navbar";
-import { Button }            from "../components/ui/Button";
-import { Card }              from "../components/ui/Card";
+import { Button }            from "../components/ui/button";
+import { Card }              from "../components/ui/card";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 const features = [
@@ -63,10 +63,10 @@ export function Landing() {
                 TaskFlow Lite centraliza todas tus tareas, proyectos y colaboradores en un solo lugar. Deja atrás el caos y enfócate en lo que realmente importa.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
-                <Button variant="primary" size="lg" onClick={() => navigate("/register")} icon={<ArrowRight size={18} />}>
+                <Button variant="primary" size="lg" onClick={() => { void navigate("/register"); }} icon={<ArrowRight size={18} />}>
                   Comenzar gratis
                 </Button>
-                <Button variant="outline" size="lg" onClick={() => navigate("/login")}>
+                <Button variant="outline" size="lg" onClick={() => { void navigate("/login"); }}>
                   Ver demo
                 </Button>
               </div>
@@ -174,7 +174,7 @@ export function Landing() {
                 ))}
               </div>
               <div className="mt-10">
-                <Button variant="primary" size="lg" onClick={() => navigate("/register")} icon={<ChevronRight size={18} />}>
+                <Button variant="primary" size="lg" onClick={() => { void navigate("/register"); }} icon={<ChevronRight size={18} />}>
                   Crear cuenta gratuita
                 </Button>
               </div>
@@ -200,7 +200,7 @@ export function Landing() {
                     <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-5 italic" style={{ lineHeight: 1.7 }}>"{t.text}"</p>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-5 italic" style={{ lineHeight: 1.7 }}>&ldquo;{t.text}&rdquo;</p>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center text-blue-600 text-sm font-bold">
                     {t.name[0]}
@@ -226,11 +226,11 @@ export function Landing() {
             Únete a más de 10,000 equipos que ya confían en TaskFlow Lite.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button variant="secondary" size="lg" onClick={() => navigate("/register")}
+            <Button variant="secondary" size="lg" onClick={() => { void navigate("/register"); }}
               className="bg-white text-blue-600 hover:bg-blue-50">
               Comenzar 14 días gratis
             </Button>
-            <Button variant="ghost" size="lg" onClick={() => navigate("/login")}
+            <Button variant="ghost" size="lg" onClick={() => { void navigate("/login"); }}
               className="text-white hover:bg-white/10">
               Ya tengo cuenta
             </Button>

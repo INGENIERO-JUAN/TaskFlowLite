@@ -11,17 +11,18 @@ import {
   CheckCircle2, AlertCircle, Plus, Users, Hash,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "../components/ui/Button";
-import { Input }  from "../components/ui/Input";
+import { Button } from "../components/ui/button";
+import { Input }  from "../components/ui/input";
 import { useAuth } from "../hooks/useAuth";
 import type { RegisterData } from "../stores/useAuthStore";
 
 const registerSchema = z.object({
   name:            z.string().min(2, "Mínimo 2 caracteres").max(60),
+  /* eslint-disable-next-line @typescript-eslint/no-deprecated */
   email:           z.string().min(1, "El email es obligatorio").email("Email inválido"),
   password:        z.string().min(8, "Mínimo 8 caracteres").max(100),
   confirmPassword: z.string().min(1, "Confirma tu contraseña"),
-  terms:           z.boolean().refine(v => v === true, { message: "Debes aceptar los términos" }),
+  terms:           z.boolean().refine(v => v, { message: "Debes aceptar los términos" }),
 }).refine(d => d.password === d.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
@@ -78,7 +79,7 @@ export function Register() {
       };
       await registerUser(payload);
       toast.success("¡Cuenta creada exitosamente!");
-      navigate("/dashboard");
+      void navigate("/dashboard");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Error al crear la cuenta.";
       if (msg.includes("workspace") || msg.includes("código")) {
@@ -118,7 +119,7 @@ export function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="flex flex-col gap-4" noValidate>
             <Input label="Nombre completo *" type="text" placeholder="Juan Pérez"
               leftIcon={<User size={16} />} error={errors.name?.message}
               autoComplete="name" {...register("name")} />
@@ -131,7 +132,7 @@ export function Register() {
               <Input label="Contraseña *" type={showPassword ? "text" : "password"}
                 placeholder="••••••••" leftIcon={<Lock size={16} />}
                 rightIcon={
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  <button type="button" onClick={() => { setShowPassword(!showPassword); }}
                     className="cursor-pointer text-gray-400 hover:text-gray-600">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -153,7 +154,7 @@ export function Register() {
             <Input label="Confirmar contraseña *" type={showConfirm ? "text" : "password"}
               placeholder="••••••••" leftIcon={<Lock size={16} />}
               rightIcon={
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                <button type="button" onClick={() => { setShowConfirm(!showConfirm); }}
                   className="cursor-pointer text-gray-400 hover:text-gray-600">
                   {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

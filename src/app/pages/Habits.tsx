@@ -4,8 +4,8 @@
  */
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Flame, CheckCircle2, Circle, Trophy, Target } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { Input }  from "../components/ui/Input";
+import { Button } from "../components/ui/button";
+import { Input }  from "../components/ui/input";
 import { Modal }  from "../components/ui/Modal";
 import { useAuth } from "../hooks/useAuth";
 
@@ -21,12 +21,12 @@ interface Habit {
 type HabitColor = "blue" | "green" | "purple" | "orange" | "pink" | "red";
 
 const colorConfig: Record<HabitColor, { bg: string; text: string; ring: string; bar: string }> = {
-  blue:   { bg: "bg-blue-50 dark:bg-blue-950/40",   text: "text-blue-600",   ring: "ring-blue-400",   bar: "bg-blue-500"   },
+  blue:   { bg: "bg-blue-50 dark:bg-blue-950/40",    text: "text-blue-600",   ring: "ring-blue-400",   bar: "bg-blue-500"   },
   green:  { bg: "bg-green-50 dark:bg-green-950/40",  text: "text-green-600",  ring: "ring-green-400",  bar: "bg-green-500"  },
   purple: { bg: "bg-purple-50 dark:bg-purple-950/40",text: "text-purple-600", ring: "ring-purple-400", bar: "bg-purple-500" },
   orange: { bg: "bg-orange-50 dark:bg-orange-950/40",text: "text-orange-600", ring: "ring-orange-400", bar: "bg-orange-500" },
-  pink:   { bg: "bg-pink-50 dark:bg-pink-950/40",   text: "text-pink-600",   ring: "ring-pink-400",   bar: "bg-pink-500"   },
-  red:    { bg: "bg-red-50 dark:bg-red-950/40",     text: "text-red-600",    ring: "ring-red-400",    bar: "bg-red-500"    },
+  pink:   { bg: "bg-pink-50 dark:bg-pink-950/40",    text: "text-pink-600",   ring: "ring-pink-400",   bar: "bg-pink-500"   },
+  red:    { bg: "bg-red-50 dark:bg-red-950/40",      text: "text-red-600",    ring: "ring-red-400",    bar: "bg-red-500"    },
 };
 
 const COLORS: HabitColor[] = ["blue", "green", "purple", "orange", "pink", "red"];
@@ -40,7 +40,7 @@ function getStreak(completedDates: string[]): number {
   const sorted = [...completedDates].sort().reverse();
   const today = toDateStr(new Date());
   let streak = 0;
-  let current = new Date();
+  const current = new Date();
   if (sorted[0] !== today) current.setDate(current.getDate() - 1);
   for (const d of sorted) {
     if (d === toDateStr(current)) { streak++; current.setDate(current.getDate() - 1); } else break;
@@ -68,7 +68,12 @@ export function Habits() {
   const storageKey = `habits_${user?.email ?? "guest"}`;
 
   const [habits, setHabits] = useState<Habit[]>(() => {
-    try { const raw = localStorage.getItem(storageKey); return raw ? JSON.parse(raw) : []; } catch { return []; }
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) as Habit[] : [];
+    } catch {
+      return [];
+    }
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteHabit, setDeleteHabit] = useState<Habit | null>(null);
@@ -89,15 +94,23 @@ export function Habits() {
 
   const handleCreate = () => {
     if (!form.name.trim()) return;
-    setHabits(prev => [{ id: Date.now(), name: form.name, emoji: form.emoji, color: form.color, completedDates: [], createdAt: new Date().toISOString() }, ...prev]);
+    setHabits(prev => [{
+      id: Date.now(), name: form.name, emoji: form.emoji, color: form.color,
+      completedDates: [], createdAt: new Date().toISOString(),
+    }, ...prev]);
     setIsModalOpen(false);
   };
 
-  const handleDelete = (habit: Habit) => { setHabits(prev => prev.filter(h => h.id !== habit.id)); setDeleteHabit(null); };
+  const handleDelete = (habit: Habit) => {
+    setHabits(prev => prev.filter(h => h.id !== habit.id));
+    setDeleteHabit(null);
+  };
 
   const completedToday = habits.filter(h => h.completedDates.includes(today)).length;
   const bestStreak     = habits.reduce((max, h) => Math.max(max, getStreak(h.completedDates)), 0);
-  const totalRate      = habits.length ? Math.round(habits.reduce((sum, h) => sum + getCompletionRate(h.completedDates, h.createdAt), 0) / habits.length) : 0;
+  const totalRate      = habits.length
+    ? Math.round(habits.reduce((sum, h) => sum + getCompletionRate(h.completedDates, h.createdAt), 0) / habits.length)
+    : 0;
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -107,7 +120,8 @@ export function Habits() {
           <h1 className="text-gray-900 dark:text-white" style={{ fontSize: "1.75rem", fontWeight: 800 }}>Mis Hábitos</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{completedToday}/{habits.length} completados hoy</p>
         </div>
-        <Button variant="primary" size="md" icon={<Plus size={16} />} onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
+        <Button variant="primary" size="md" icon={<Plus size={16} />}
+          onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
           Nuevo hábito
         </Button>
       </div>
@@ -116,9 +130,9 @@ export function Habits() {
       {habits.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: "Hoy", value: `${completedToday}/${habits.length}`, sub: "completados", icon: <CheckCircle2 size={16} className="text-green-500" />, color: "text-green-600" },
-            { label: "Mejor racha", value: String(bestStreak), sub: "días seguidos", icon: <Flame size={16} className="text-orange-500" />, color: "text-orange-600" },
-            { label: "Cumplimiento", value: `${totalRate}%`, sub: "promedio global", icon: <Trophy size={16} className="text-purple-500" />, color: "text-purple-600" },
+            { label: "Hoy",           value: `${completedToday.toString()}/${habits.length.toString()}`, sub: "completados",     icon: <CheckCircle2 size={16} className="text-green-500" />,  color: "text-green-600"  },
+            { label: "Mejor racha",   value: String(bestStreak),                                           sub: "días seguidos",   icon: <Flame size={16} className="text-orange-500" />,        color: "text-orange-600" },
+            { label: "Cumplimiento",  value: `${totalRate.toString()}%`,                                   sub: "promedio global", icon: <Trophy size={16} className="text-purple-500" />,       color: "text-purple-600" },
           ].map(s => (
             <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 flex flex-col gap-1">
               <div className="flex items-center gap-2">{s.icon}<span className="text-xs text-gray-500 dark:text-gray-400">{s.label}</span></div>
@@ -134,7 +148,8 @@ export function Habits() {
         <div className="flex flex-col items-center gap-4 py-24 text-gray-400">
           <Target size={48} className="text-gray-300 dark:text-gray-600" />
           <p className="text-sm">Aún no tienes hábitos registrados</p>
-          <Button variant="secondary" size="sm" icon={<Plus size={14} />} onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
+          <Button variant="secondary" size="sm" icon={<Plus size={14} />}
+            onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}>
             Crear primer hábito
           </Button>
         </div>
@@ -167,7 +182,7 @@ export function Habits() {
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${cfg.bar}`} style={{ width: `${rate}%` }} />
+                        <div className={`h-full rounded-full transition-all ${cfg.bar}`} style={{ width: `${rate.toString()}%` }} />
                       </div>
                       <span className="text-xs text-gray-400 shrink-0">{rate}%</span>
                     </div>
@@ -177,23 +192,25 @@ export function Habits() {
                       const done = habit.completedDates.includes(d.date);
                       const isToday = d.date === today;
                       return (
-                        <button key={d.date} onClick={() => toggleDay(habit.id, d.date)}
+                        <button key={d.date} onClick={() => { toggleDay(habit.id, d.date); }}
                           className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer border-none ${
-                            done ? `${cfg.bg} ${cfg.text} ${isToday ? `ring-2 ${cfg.ring}` : ""}` : `bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ${isToday ? "ring-2 ring-gray-300 dark:ring-gray-600" : ""}`
+                            done
+                              ? `${cfg.bg} ${cfg.text} ${isToday ? `ring-2 ${cfg.ring}` : ""}`
+                              : `bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ${isToday ? "ring-2 ring-gray-300 dark:ring-gray-600" : ""}`
                           }`}>
                           {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                         </button>
                       );
                     })}
                   </div>
-                  <button onClick={() => setDeleteHabit(habit)}
+                  <button onClick={() => { setDeleteHabit(habit); }}
                     className="w-7 h-7 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer ml-1">
                     <Trash2 size={14} />
                   </button>
                 </div>
                 {doneToday && (
                   <div className={`mt-3 px-3 py-2 rounded-lg text-xs ${cfg.bg} ${cfg.text}`} style={{ fontWeight: 500 }}>
-                    {streak >= 7 ? `🔥 ¡Increíble! ${streak} días seguidos` : streak >= 3 ? `💪 ¡Vas bien! ${streak} días seguidos` : "✅ ¡Completado hoy! Sigue así"}
+                    {streak >= 7 ? `🔥 ¡Increíble! ${streak.toString()} días seguidos` : streak >= 3 ? `💪 ¡Vas bien! ${streak.toString()} días seguidos` : "✅ ¡Completado hoy! Sigue así"}
                   </div>
                 )}
               </div>
@@ -203,21 +220,21 @@ export function Habits() {
       )}
 
       {/* Modal crear hábito */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nuevo hábito" size="sm"
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); }} title="Nuevo hábito" size="sm"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setIsModalOpen(false); }}>Cancelar</Button>
             <Button variant="primary" size="sm" onClick={handleCreate} disabled={!form.name.trim()}>Crear hábito</Button>
           </>
         }>
         <div className="flex flex-col gap-4">
           <Input label="Nombre del hábito *" type="text" placeholder="Ej: Leer 30 minutos..."
-            value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); }} />
           <div className="flex flex-col gap-2">
             <label className="text-sm text-gray-700 dark:text-gray-300">Ícono</label>
             <div className="flex flex-wrap gap-2">
               {EMOJIS.map(e => (
-                <button key={e} onClick={() => setForm({ ...form, emoji: e })}
+                <button key={e} onClick={() => { setForm({ ...form, emoji: e }); }}
                   className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center cursor-pointer transition-all border ${form.emoji === e ? "bg-blue-50 dark:bg-blue-950 border-blue-400 scale-110" : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
                   {e}
                 </button>
@@ -228,7 +245,7 @@ export function Habits() {
             <label className="text-sm text-gray-700 dark:text-gray-300">Color</label>
             <div className="flex gap-2">
               {COLORS.map(c => (
-                <button key={c} onClick={() => setForm({ ...form, color: c })}
+                <button key={c} onClick={() => { setForm({ ...form, color: c }); }}
                   className={`w-8 h-8 rounded-full cursor-pointer transition-all border-2 ${colorConfig[c].bar} ${form.color === c ? "border-gray-800 dark:border-white scale-110" : "border-transparent hover:scale-105"}`} />
               ))}
             </div>
@@ -237,11 +254,11 @@ export function Habits() {
       </Modal>
 
       {/* Modal eliminar */}
-      <Modal isOpen={!!deleteHabit} onClose={() => setDeleteHabit(null)} title="Eliminar hábito" size="sm"
+      <Modal isOpen={!!deleteHabit} onClose={() => { setDeleteHabit(null); }} title="Eliminar hábito" size="sm"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteHabit(null)}>Cancelar</Button>
-            <Button variant="danger" size="sm" onClick={() => deleteHabit && handleDelete(deleteHabit)}>Sí, eliminar</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setDeleteHabit(null); }}>Cancelar</Button>
+            <Button variant="danger" size="sm" onClick={() => { if (deleteHabit) handleDelete(deleteHabit); }}>Sí, eliminar</Button>
           </>
         }>
         <div className="flex flex-col items-center gap-4 py-2 text-center">
@@ -249,7 +266,7 @@ export function Habits() {
             <Trash2 size={22} className="text-red-600" />
           </div>
           <p className="text-gray-600 dark:text-gray-300 text-sm">
-            ¿Eliminar el hábito <strong>"{deleteHabit?.name}"</strong>? Perderás todo tu historial y racha.
+            ¿Eliminar el hábito <strong>&ldquo;{deleteHabit?.name}&rdquo;</strong>? Perderás todo tu historial y racha.
           </p>
         </div>
       </Modal>

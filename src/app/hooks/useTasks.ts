@@ -7,7 +7,7 @@
  * La lógica de datos (CRUD, API, persistencia) vive en useTaskStore.
  * Este hook solo orquesta la UI del Dashboard.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./useAuth";
 import { useTaskStore } from "../stores/useTaskStore";
 import type { Task, Comment, Evidence, Status, Priority } from "./taskTypes";
@@ -48,15 +48,20 @@ export function useTasks() {
   const [evidenceTask,    setEvidenceTask]    = useState<Task | null>(null);
   const [evidenceForm,    setEvidenceForm]    = useState({ ...EMPTY_EVIDENCE });
 
+  // Ref para acceder a detailTask dentro del effect sin añadirlo como dep
+  const detailTaskRef = useRef(detailTask);
+  detailTaskRef.current = detailTask;
+
   // ── Cargar tareas al montar / cambiar workspace ────────────────────────────
   useEffect(() => {
-    if (workspaceCode) fetchTasks(workspaceCode);
+    if (workspaceCode) void fetchTasks(workspaceCode);
   }, [workspaceCode, fetchTasks]);
 
   // ── Mantener detailTask sincronizado con store ─────────────────────────────
   useEffect(() => {
-    if (detailTask) {
-      const updated = tasks.find(t => t.id === detailTask.id);
+    const current = detailTaskRef.current;
+    if (current) {
+      const updated = tasks.find(t => t.id === current.id);
       if (updated) setDetailTask(updated);
     }
   }, [tasks]);

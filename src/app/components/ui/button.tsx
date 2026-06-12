@@ -1,85 +1,79 @@
 /**
- * Button — Componente de botón reutilizable con variantes y estados.
+ * Button — Componente de botón reutilizable con dark mode.
  *
- * Variantes: primary | secondary | danger | ghost | outline
- * Tamaños:   sm | md | lg
- * Props:     icon, loading, disabled, fullWidth
+ * Variantes: primary | secondary | outline | ghost | danger
+ * Tamaños:   sm | md | lg | icon
  */
-import React from "react";
-import { Spinner } from "./Spinner";
+import React, { forwardRef } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "outline";
-type ButtonSize = "sm" | "md" | "lg";
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: React.ReactNode;
-  iconRight?: React.ReactNode;
-  loading?: boolean;
   fullWidth?: boolean;
-  children?: React.ReactNode;
+  loading?: boolean;
 }
+
+const baseButton =
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:opacity-60 disabled:cursor-not-allowed border";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white border-transparent shadow-sm disabled:bg-blue-300",
+    "bg-blue-600 hover:bg-blue-700 text-white border-transparent focus:ring-blue-500/30",
   secondary:
-    "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 text-gray-700 dark:text-gray-200 border-transparent",
-  danger:
-    "bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-transparent shadow-sm disabled:bg-red-300",
-  ghost:
-    "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 text-gray-600 dark:text-gray-300 border-transparent",
+    "bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white border-transparent focus:ring-gray-400/30",
   outline:
-    "bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900 active:bg-gray-100 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600",
+    "bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 focus:ring-gray-400/30",
+  ghost:
+    "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-transparent focus:ring-gray-400/30",
+  danger:
+    "bg-red-600 hover:bg-red-700 text-white border-transparent focus:ring-red-500/30",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-xs gap-1.5 rounded-lg",
-  md: "px-4 py-2 text-sm gap-2 rounded-lg",
-  lg: "px-5 py-2.5 text-base gap-2.5 rounded-xl",
+  sm: "px-3 py-1.5 text-sm",
+  md: "px-4 py-2.5 text-sm",
+  lg: "px-5 py-3 text-base",
+  icon: "p-2.5",
 };
 
-export function Button({
-  variant = "primary",
-  size = "md",
-  icon,
-  iconRight,
-  loading = false,
-  fullWidth = false,
-  disabled,
-  className = "",
-  children,
-  ...rest
-}: ButtonProps) {
-  const isDisabled = disabled || loading;
-
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    children,
+    variant = "primary",
+    size = "md",
+    icon,
+    fullWidth = false,
+    loading = false,
+    disabled,
+    className = "",
+    type = "button",
+    ...rest
+  },
+  ref
+) {
   return (
     <button
-      disabled={isDisabled}
+      ref={ref}
+      type={type}
+      disabled={disabled ?? loading}
       className={[
-        "inline-flex items-center justify-center font-medium border transition-colors cursor-pointer select-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-        "disabled:opacity-60 disabled:cursor-not-allowed",
+        baseButton,
         variantClasses[variant],
         sizeClasses[size],
         fullWidth ? "w-full" : "",
+        "cursor-pointer",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
       {...rest}
     >
-      {loading ? (
-        <Spinner
-          size="sm"
-          color={variant === "primary" || variant === "danger" ? "white" : "gray"}
-        />
-      ) : (
-        icon && <span className="shrink-0">{icon}</span>
-      )}
-      {children && <span>{children}</span>}
-      {!loading && iconRight && <span className="shrink-0 ml-auto">{iconRight}</span>}
+      {icon && <span className="inline-flex shrink-0">{icon}</span>}
+      {children}
     </button>
   );
-}
+});

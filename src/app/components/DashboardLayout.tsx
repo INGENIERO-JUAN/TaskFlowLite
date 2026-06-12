@@ -10,6 +10,7 @@
 import { Navigate, Outlet } from "react-router";
 import { NavbarAuth }       from "./NavbarAuth";
 import { useAuthStore }     from "../stores/useAuthStore";
+import React from "react";
 
 export function DashboardLayout() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);

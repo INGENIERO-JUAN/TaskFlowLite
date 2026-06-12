@@ -63,8 +63,10 @@ function generateCode(): string {
 function loadWorkspaces(): Record<string, Workspace> {
   try {
     const raw = localStorage.getItem(WORKSPACES_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+    return raw ? JSON.parse(raw) as Record<string, Workspace> : {};
+  } catch {
+    return {};
+  }
 }
 
 function saveWorkspaces(ws: Record<string, Workspace>): void {
@@ -74,8 +76,10 @@ function saveWorkspaces(ws: Record<string, Workspace>): void {
 function loadUsers(): StoredUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+    return raw ? JSON.parse(raw) as StoredUser[] : [];
+  } catch {
+    return [];
+  }
 }
 
 function saveUsers(users: StoredUser[]): void {
@@ -94,7 +98,9 @@ export function loadSession(): AuthUser | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) as AuthUser : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -110,15 +116,16 @@ export function useAuthActions(): UseAuthActionsReturn {
   const [user, setUser] = useState<AuthUser | null>(loadSession);
 
   const login = useCallback(async (email: string, password: string) => {
-    await new Promise(r => setTimeout(r, 900));
+    await new Promise<void>(r => setTimeout(r, 900));
 
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!found)               throw new Error("Usuario no registrado.");
+    if (!found)                      throw new Error("Usuario no registrado.");
     if (found.password !== password) throw new Error("Contraseña incorrecta.");
 
     const workspaces = loadWorkspaces();
     const ws = workspaces[found.workspaceCode];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!ws) throw new Error("El workspace de este usuario ya no existe.");
 
     const sessionUser: AuthUser = {
@@ -134,7 +141,7 @@ export function useAuthActions(): UseAuthActionsReturn {
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
-    await new Promise(r => setTimeout(r, 1100));
+    await new Promise<void>(r => setTimeout(r, 1100));
 
     const users = loadUsers();
     const exists = users.some(u => u.email.toLowerCase() === data.email.toLowerCase());
@@ -145,8 +152,8 @@ export function useAuthActions(): UseAuthActionsReturn {
     let workspaceName: string;
 
     if (data.workspaceAction === "create") {
-      // Crear workspace nuevo con código único
       if (!data.workspaceName?.trim()) throw new Error("El nombre del workspace es obligatorio.");
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       do { workspaceCode = generateCode(); } while (workspaces[workspaceCode]);
       workspaceName = data.workspaceName.trim();
 
@@ -157,9 +164,9 @@ export function useAuthActions(): UseAuthActionsReturn {
         members: [data.email],
       };
     } else {
-      // Unirse a workspace existente
       const code = data.workspaceCode?.trim().toUpperCase() ?? "";
       if (!code) throw new Error("Debes ingresar el código del workspace.");
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!workspaces[code]) throw new Error(`No existe ningún workspace con el código "${code}".`);
       workspaceCode = code;
       workspaceName = workspaces[code].name;

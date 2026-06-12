@@ -85,7 +85,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </span>
         )}
       </div>
-      {(error || hint) && (
+      {(error ?? hint) && (
         <p
           className={`mt-1.5 text-xs ${
             error

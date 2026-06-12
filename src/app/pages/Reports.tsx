@@ -14,35 +14,65 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
-type Priority = "alta" | "media" | "baja";
-type Status   = "pendiente" | "en progreso" | "completada";
+type ReportPriority = "alta" | "media" | "baja";
+type ReportStatus   = "pendiente" | "en progreso" | "completada";
 
-interface Task {
-  id: number; title: string; description: string;
-  priority: Priority; status: Status; dueDate: string; assignee: string;
+interface ReportTask {
+  id: number;
+  title: string;
+  description: string;
+  priority: ReportPriority;
+  status: ReportStatus;
+  dueDate: string;
+  assignee: string;
 }
 
-const STATUS_COLORS: Record<Status, string> = {
+interface TooltipPayloadItem {
+  color?: string;
+  name?: string;
+  value?: number;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}
+
+const STATUS_COLORS: Record<ReportStatus, string> = {
   pendiente: "#94a3b8", "en progreso": "#3b82f6", completada: "#22c55e",
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs shadow-md">
       {label && <p className="text-gray-500 dark:text-gray-400 mb-1">{label}</p>}
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="font-medium">{p.name}: {p.value}</p>
       ))}
     </div>
   );
 };
 
-const PieTooltip = ({ active, payload }: any) => {
+interface PiePayloadItem {
+  name?: string;
+  value?: number;
+}
+
+interface PieTooltipProps {
+  active?: boolean;
+  payload?: PiePayloadItem[];
+}
+
+const PieTooltip = ({ active, payload }: PieTooltipProps) => {
   if (!active || !payload?.length) return null;
+  const item = payload[0];
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs shadow-md">
-      <p className="text-gray-900 dark:text-white font-medium">{payload[0].name}: {payload[0].value} tarea{payload[0].value !== 1 ? "s" : ""}</p>
+      <p className="text-gray-900 dark:text-white font-medium">
+        {item.name}: {item.value} tarea{item.value !== 1 ? "s" : ""}
+      </p>
     </div>
   );
 };
@@ -51,22 +81,27 @@ export function Reports() {
   const { user } = useAuth();
   const storageKey = `tasks_workspace_${user?.workspaceCode ?? "default"}`;
 
-  const tasks = useMemo<Task[]>(() => {
-    try { const raw = localStorage.getItem(storageKey); return raw ? JSON.parse(raw) : []; } catch { return []; }
+  const tasks = useMemo<ReportTask[]>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) as ReportTask[] : [];
+    } catch {
+      return [];
+    }
   }, [storageKey]);
 
   const statusData = useMemo(() => {
-    const counts = { pendiente: 0, "en progreso": 0, completada: 0 } as Record<Status, number>;
+    const counts: Record<ReportStatus, number> = { pendiente: 0, "en progreso": 0, completada: 0 };
     tasks.forEach(t => counts[t.status]++);
     return [
-      { name: "Pendientes",  value: counts["pendiente"],   color: STATUS_COLORS["pendiente"]   },
+      { name: "Pendientes",  value: counts.pendiente,   color: STATUS_COLORS.pendiente   },
       { name: "En progreso", value: counts["en progreso"], color: STATUS_COLORS["en progreso"] },
-      { name: "Completadas", value: counts["completada"],  color: STATUS_COLORS["completada"]  },
+      { name: "Completadas", value: counts.completada,  color: STATUS_COLORS.completada  },
     ].filter(d => d.value > 0);
   }, [tasks]);
 
   const priorityData = useMemo(() => {
-    const counts = { alta: 0, media: 0, baja: 0 } as Record<Priority, number>;
+    const counts: Record<ReportPriority, number> = { alta: 0, media: 0, baja: 0 };
     tasks.forEach(t => counts[t.priority]++);
     return [
       { name: "Alta",  total: counts.alta,  completadas: tasks.filter(t => t.priority === "alta"  && t.status === "completada").length },
@@ -79,15 +114,23 @@ export function Reports() {
     const map: Record<string, { total: number; completadas: number }> = {};
     tasks.forEach(t => {
       if (!t.assignee) return;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!map[t.assignee]) map[t.assignee] = { total: 0, completadas: 0 };
       map[t.assignee].total++;
       if (t.status === "completada") map[t.assignee].completadas++;
     });
-    return Object.entries(map).map(([name, d]) => ({ name, total: d.total, completadas: d.completadas, rate: Math.round((d.completadas / d.total) * 100) }))
-      .sort((a, b) => b.total - a.total).slice(0, 6);
+    return Object.entries(map)
+      .map(([name, d]) => ({ name, total: d.total, completadas: d.completadas, rate: Math.round((d.completadas / d.total) * 100) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
   }, [tasks]);
 
-  const overdueTasks = useMemo(() => tasks.filter(t => { if (t.status === "completada" || !t.dueDate) return false; return new Date(t.dueDate) < new Date(); }), [tasks]);
+  const overdueTasks = useMemo(() =>
+    tasks.filter(t => {
+      if (t.status === "completada" || !t.dueDate) return false;
+      return new Date(t.dueDate) < new Date();
+    }),
+  [tasks]);
 
   const total       = tasks.length;
   const completadas = tasks.filter(t => t.status === "completada").length;
@@ -119,7 +162,7 @@ export function Reports() {
           { label: "Total tareas",  value: total,       icon: <BarChart3 size={16} />,    color: "#3b82f6", bg: "bg-blue-50 dark:bg-blue-950"   },
           { label: "Completadas",   value: completadas, icon: <CheckCircle2 size={16} />, color: "#22c55e", bg: "bg-green-50 dark:bg-green-950"  },
           { label: "En progreso",   value: enProgreso,  icon: <Clock size={16} />,        color: "#f59e0b", bg: "bg-amber-50 dark:bg-amber-950"  },
-          { label: "Tasa de éxito", value: `${tasa}%`,  icon: <Target size={16} />,       color: "#8b5cf6", bg: "bg-purple-50 dark:bg-purple-950"},
+          { label: "Tasa de éxito", value: `${tasa.toString()}%`,  icon: <Target size={16} />,       color: "#8b5cf6", bg: "bg-purple-50 dark:bg-purple-950"},
         ].map(kpi => (
           <div key={kpi.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
@@ -232,7 +275,7 @@ export function Reports() {
                       <span className="text-xs text-gray-400 shrink-0 ml-2">{a.completadas}/{a.total}</span>
                     </div>
                     <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${a.rate}%` }} />
+                      <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${a.rate.toString()}%` }} />
                     </div>
                   </div>
                   <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 w-8 text-right">{a.rate}%</span>

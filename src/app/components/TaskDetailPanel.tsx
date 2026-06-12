@@ -4,7 +4,7 @@
  */
 import React, { useState } from "react";
 import { X, Shield, Link2, Edit3, Trash2, Send } from "lucide-react";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import { Task, priorityConfig, statusConfig, formatDate, timeAgo, isOverdue } from "../hooks/taskTypes";
 
 interface Props {
@@ -119,14 +119,14 @@ export function TaskDetailPanel({ task, onClose, onEdit, onDelete, onAddComment 
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mb-3">
               Comentarios{" "}
-              {(task.comments ?? []).length > 0 && (
-                <span className="text-gray-400 font-normal">({(task.comments ?? []).length})</span>
+              {task.comments.length > 0 && (
+                <span className="text-gray-400 font-normal">({task.comments.length})</span>
               )}
             </p>
-            {(task.comments ?? []).length === 0
+            {task.comments.length === 0
               ? <p className="text-xs text-gray-400 dark:text-gray-500 italic">Sé el primero en comentar...</p>
               : <div className="flex flex-col gap-3 mb-3">
-                  {(task.comments ?? []).map(c => (
+                  {task.comments.map(c => (
                     <div key={c.id} className="flex gap-2.5">
                       <div className="w-7 h-7 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs shrink-0 font-semibold">{c.author[0]}</div>
                       <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
@@ -142,8 +142,8 @@ export function TaskDetailPanel({ task, onClose, onEdit, onDelete, onAddComment 
             }
             <div className="flex gap-2 mt-3">
               <input type="text" placeholder="Escribe un comentario..." value={comment}
-                onChange={e => setComment(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSend()}
+                onChange={e => { setComment(e.target.value); }}
+                onKeyDown={e => { if (e.key === "Enter") { handleSend(); } }}
                 className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400" />
               <button onClick={handleSend} disabled={!comment.trim()}
                 className="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center disabled:opacity-40 cursor-pointer transition-colors border-none">
