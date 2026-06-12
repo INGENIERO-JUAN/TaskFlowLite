@@ -93,7 +93,7 @@ export function Login() {
               <Zap size={16} className="text-white" />
             </div>
             <span className="text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>
-              TaskFlow <span className="text-blue-600">Lite</span>
+              TaskFlow <span className="text-blue-700">Lite</span>
             </span>
           </div>
           {/* v8 ignore stop */}
@@ -131,7 +131,7 @@ export function Login() {
               leftIcon={<Lock size={16} />}
               rightIcon={
                 <button type="button" onClick={() => { setShowPassword(!showPassword); }}
-                  className="cursor-pointer text-gray-400 hover:text-gray-600"
+                  className="cursor-pointer text-gray-400 hover:text-gray-600 p-1.5 -m-1.5 flex items-center justify-center"
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -147,7 +147,7 @@ export function Login() {
                 <input type="checkbox" className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">Recordarme</span>
               </label>
-              <button type="button" className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer bg-transparent border-none p-0">
+              <button type="button" className="text-sm text-blue-700 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0">
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
@@ -159,7 +159,7 @@ export function Login() {
 
           <div className="flex items-center gap-3 my-6">
             <hr className="flex-1 border-gray-200 dark:border-gray-700" />
-            <span className="text-xs text-gray-400">O continúa con</span>
+            <span className="text-xs text-gray-500">O continúa con</span>
             <hr className="flex-1 border-gray-200 dark:border-gray-700" />
           </div>
 

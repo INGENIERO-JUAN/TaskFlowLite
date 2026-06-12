@@ -12,6 +12,16 @@ vi.mock("../app/lib/axios", () => ({
   apiDelete: vi.fn().mockRejectedValue(new Error("Network Error")),
 }));
 
+// Mock Navbar para aislar la página
+vi.mock("../app/components/Navbar", () => ({
+  Navbar: () => <nav data-testid="navbar" />,
+}));
+
+// Mock ImageWithFallback para evitar fetch de imágenes en jsdom
+vi.mock("../app/components/figma/ImageWithFallback", () => ({
+  ImageWithFallback: ({ alt }: { alt: string }) => <img alt={alt} />,
+}));
+
 const navigateMock = vi.fn();
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -31,7 +41,7 @@ describe("Landing page", () => {
     expect(screen.getByText(/TaskFlow Lite\. Todos los derechos reservados/i)).toBeInTheDocument();
   });
 
-  it("el botón 'Comenzar gratis' navega a /register", async () => {
+  it("el botón 'Comenzar gratis' (hero) navega a /register", async () => {
     render(<MemoryRouter><Landing /></MemoryRouter>);
     const btn = screen.getAllByRole("button", { name: /comenzar gratis/i })[0];
     await userEvent.click(btn);
@@ -49,5 +59,38 @@ describe("Landing page", () => {
     render(<MemoryRouter><Landing /></MemoryRouter>);
     expect(screen.getByText(/Ana García/i)).toBeInTheDocument();
     expect(screen.getByText(/Carlos Mendez/i)).toBeInTheDocument();
+  });
+
+  it("el botón 'Crear cuenta gratuita' (how-it-works) navega a /register", async () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    const btn = screen.getByRole("button", { name: /crear cuenta gratuita/i });
+    await userEvent.click(btn);
+    expect(navigateMock).toHaveBeenCalledWith("/register");
+  });
+
+  it("el botón 'Comenzar 14 días gratis' (CTA) navega a /register", async () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    const btn = screen.getByRole("button", { name: /comenzar 14 días gratis/i });
+    await userEvent.click(btn);
+    expect(navigateMock).toHaveBeenCalledWith("/register");
+  });
+
+  it("el botón 'Ya tengo cuenta' (CTA) navega a /login", async () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    const btn = screen.getByRole("button", { name: /ya tengo cuenta/i });
+    await userEvent.click(btn);
+    expect(navigateMock).toHaveBeenCalledWith("/login");
+  });
+
+  it("muestra la sección de steps (cómo funciona)", () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    expect(screen.getByText(/Crea tu espacio de trabajo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Agrega tu equipo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Empieza a producir/i)).toBeInTheDocument();
+  });
+
+  it("muestra las estadísticas del banner azul", () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    expect(screen.getByText(/Uptime Garantizado/i)).toBeInTheDocument();
   });
 });

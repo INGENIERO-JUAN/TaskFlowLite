@@ -69,7 +69,6 @@ describe("Login page", () => {
     await userEvent.type(screen.getByPlaceholderText(/tu@empresa/i), "loginuser@test.com");
     await userEvent.type(screen.getByPlaceholderText(/••••••••/), "secret123");
     await userEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
-
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/dashboard");
     }, { timeout: 5000 });
@@ -82,11 +81,38 @@ describe("Login page", () => {
     const toggleBtn = screen.getByLabelText(/mostrar contraseña/i);
     await userEvent.click(toggleBtn);
     expect((passwordInput as HTMLInputElement).type).toBe("text");
+    // Volver a ocultar
+    await userEvent.click(screen.getByLabelText(/ocultar contraseña/i));
+    expect((passwordInput as HTMLInputElement).type).toBe("password");
   });
 
   it("tiene un link para ir a registro", () => {
     render(<MemoryRouter><Login /></MemoryRouter>);
     const link = screen.getByRole("link", { name: /crear cuenta gratis/i });
     expect(link).toHaveAttribute("href", "/register");
+  });
+
+  // ── Branch faltante: error de root cuando credenciales son incorrectas ──────
+
+  it("muestra banner de error cuando las credenciales son incorrectas", async () => {
+    render(<MemoryRouter><Login /></MemoryRouter>);
+    // Email no registrado → error de autenticación
+    await userEvent.type(screen.getByPlaceholderText(/tu@empresa/i), "noexiste@test.com");
+    await userEvent.type(screen.getByPlaceholderText(/••••••••/), "wrongpass123");
+    await userEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
+    await waitFor(() => {
+      // El banner rojo de error de root debe aparecer
+      expect(screen.getByText(/no registrado|credenciales|incorrecto/i)).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it("muestra error de contraseña mínimo 6 caracteres", async () => {
+    render(<MemoryRouter><Login /></MemoryRouter>);
+    await userEvent.type(screen.getByPlaceholderText(/tu@empresa/i), "test@test.com");
+    await userEvent.type(screen.getByPlaceholderText(/••••••••/), "abc");
+    await userEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/mínimo 6 caracteres/i)).toBeInTheDocument();
+    });
   });
 });
