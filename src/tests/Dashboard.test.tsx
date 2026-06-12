@@ -100,6 +100,7 @@ vi.mock("../app/components/TaskModals", () => ({
 import { Dashboard } from "../app/pages/Dashboard";
 import { useAuthStore } from "../app/stores/useAuthStore";
 import { useTaskStore } from "../app/stores/useTaskStore";
+import type { Task } from "../app/stores/useTaskStore";
 
 Object.assign(navigator, {
   clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -113,12 +114,12 @@ const BASE_USER = {
   isWorkspaceOwner: true,
 };
 
-const BASE_TASKS = [
+const BASE_TASKS: Task[] = [
   { id: 1, title: "Tarea 1", description: "desc", priority: "alta" as const, status: "pendiente" as const, dueDate: "2026-01-01", assignee: "", comments: [] },
   { id: 2, title: "Tarea 2", description: "desc", priority: "media" as const, status: "completada" as const, dueDate: "2026-01-02", assignee: "", comments: [] },
 ];
 
-function setupStore(overrides: Partial<typeof BASE_USER> = {}, tasksOverride = BASE_TASKS) {
+function setupStore(overrides: Partial<typeof BASE_USER> = {}, tasksOverride: Task[] = BASE_TASKS) {
   useAuthStore.setState({ user: { ...BASE_USER, ...overrides }, isAuthenticated: true, isLoading: false });
   useTaskStore.setState({
     tasks: tasksOverride, isLoading: false, error: null, workspaceCode: "ABC123",
