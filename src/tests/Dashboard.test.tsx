@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 
@@ -196,12 +196,14 @@ describe("Dashboard page", () => {
 
   it("copia el código del workspace al hacer click en el botón de copia", async () => {
     setupStore();
-    const { container } = render(<Dashboard />);
+    render(<Dashboard />);
     await userEvent.click(screen.getByRole("button", { name: /ABC123/i }));
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("ABC123");
     // Espera a que se resuelva la promesa del clipboard y cambie el ícono a "copiado"
     await waitFor(() => {
-      expect(container.querySelector(".text-green-600")).toBeInTheDocument();
+      const el = document.querySelector(".text-green-600");
+      expect(el).toBeInTheDocument();
     });
   });
 
