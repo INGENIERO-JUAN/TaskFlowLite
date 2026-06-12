@@ -30,18 +30,16 @@ export default defineConfig({
     },
   ],
 
-  // En CI: arranca Vite antes de los tests y lo apaga al terminar.
+  // Arranca Vite antes de los tests (si no hay uno corriendo ya) y lo apaga al terminar.
   // VITE_API_URL apunta a un host inalcanzable para forzar el modo offline
   // y no depender de la disponibilidad del backend en Render.
-  webServer: process.env.CI
-    ? {
-        command: "npm run dev",
-        url: "http://localhost:5173",
-        reuseExistingServer: !process.env.CI,
-        timeout: 60_000,
-        env: {
-          VITE_API_URL: "http://127.0.0.1:9/api",
-        },
-      }
-    : undefined,
+  webServer: {
+    command: "npm run dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+    env: {
+      VITE_API_URL: "http://127.0.0.1:9/api",
+    },
+  },
 });

@@ -52,7 +52,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const isAuthEndpoint =
+      axios.isAxiosError(error) &&
+      typeof error.config?.url === "string" &&
+      /\/auth\/(login|register)/.test(error.config.url);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401 && !isAuthEndpoint) {
       // Paso 1 — Destruir cookie de sesión en el backend (fire-and-forget)
       try {
         await axios.post(

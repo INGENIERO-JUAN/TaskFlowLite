@@ -66,6 +66,7 @@ export function Navbar() {
             <button
               onClick={toggleTheme}
               title={isDark ? "Modo claro" : "Modo oscuro"}
+              aria-label={isDark ? "Activar modo claro" : "Activar modo oscuro"}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer border-none bg-transparent">
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
@@ -94,6 +95,8 @@ export function Navbar() {
           {/* Mobile toggle */}
           <div className="md:hidden flex items-center gap-2">
             <button onClick={toggleTheme}
+              title={isDark ? "Modo claro" : "Modo oscuro"}
+              aria-label={isDark ? "Activar modo claro" : "Activar modo oscuro"}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer border-none bg-transparent">
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>

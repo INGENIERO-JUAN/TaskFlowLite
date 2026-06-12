@@ -106,11 +106,11 @@ export function Landing() {
             ].map(stat => (
               <div key={stat.label}>
                 <p style={{ fontSize: "2rem", fontWeight: 800, lineHeight: 1.2 }}>{stat.value}</p>
-                <p className="text-blue-200 text-sm mt-1">{stat.label}</p>
+                <p className="text-blue-50 text-sm mt-1">{stat.label}</p>
               </div>
             ))}
           </div>
-          <p className="text-blue-100 text-xs text-center mt-6">
+          <p className="text-blue-50 text-xs text-center mt-6">
             Nota: métricas demostrativas para la presentación (sin datos reales de producción).
           </p>
         </div>
@@ -222,7 +222,7 @@ export function Landing() {
           <h2 className="text-white mb-4" style={{ fontSize: "2.5rem", fontWeight: 800 }}>
             ¿Listo para transformar tu productividad?
           </h2>
-          <p className="text-blue-100 mb-8" style={{ fontSize: "1.125rem" }}>
+          <p className="text-blue-50 mb-8" style={{ fontSize: "1.125rem" }}>
             Únete a más de 10,000 equipos que ya confían en TaskFlow Lite.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

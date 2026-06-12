@@ -76,19 +76,45 @@ const tasks = [
   }
 ];
 
+const demoEmail = "demo@taskflow.test";
+const demoPassword = "Demo1234";
+
 async function seed() {
   const client = new MongoClient(MONGODB_URI);
   try {
     await client.connect();
     const db = client.db();
     const tasksColl = db.collection("tasks");
-    
+    const workspacesColl = db.collection("workspaces");
+    const usersColl = db.collection("users");
+
+    // ─── Workspace de prueba ────────────────────────────────────────────────
+    await workspacesColl.deleteOne({ code: workspaceCode });
+    await workspacesColl.insertOne({
+      code: workspaceCode,
+      name: "Workspace Demo",
+      ownerEmail: demoEmail,
+      members: [demoEmail],
+    });
+
+    // ─── Usuario de prueba ──────────────────────────────────────────────────
+    await usersColl.deleteOne({ email: demoEmail });
+    await usersColl.insertOne({
+      name: "Usuario Demo",
+      email: demoEmail,
+      password: demoPassword, // mock auth, sin hash (igual que server.js)
+      workspaceCode,
+    });
+
+    // ─── Tareas de prueba ───────────────────────────────────────────────────
     // Limpiar tareas anteriores de este workspace para evitar duplicados
     await tasksColl.deleteMany({ workspaceCode });
-    
-    // Insertar las nuevas tareas
     await tasksColl.insertMany(tasks);
-    console.log("[Seed] 6 tareas insertadas exitosamente para el workspace:", workspaceCode);
+
+    console.log("[Seed] Listo. Datos insertados para el workspace:", workspaceCode);
+    console.log("[Seed] Credenciales de login:");
+    console.log(`[Seed]   email:    ${demoEmail}`);
+    console.log(`[Seed]   password: ${demoPassword}`);
   } catch (err) {
     console.error("[Seed] Error al sembrar base de datos:", err);
   } finally {
