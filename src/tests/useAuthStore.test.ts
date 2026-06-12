@@ -356,4 +356,32 @@ describe("useAuthStore — modo offline", () => {
 
     spy.mockRestore();
   });
+
+  it("loadSessionSync/loadWorkspaces/loadUsers manejan JSON corrupto en localStorage", async () => {
+    localStorage.setItem("taskflow_user", "{not-valid-json");
+    localStorage.setItem("taskflow_workspaces", "{not-valid-json");
+    localStorage.setItem("taskflow_users", "{not-valid-json");
+
+    const { useAuthStore } = await import("../app/stores/useAuthStore");
+
+    // loadSessionSync() debe devolver null ante JSON corrupto
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+    // loadWorkspaces/loadUsers deben devolver {} y [] ante JSON corrupto,
+    // permitiendo que register offline funcione normalmente
+    await act(async () => {
+      await useAuthStore.getState().register({
+        name: "Recuperado",
+        email: "recuperado@test.com",
+        password: "123456",
+        workspaceAction: "create",
+        workspaceName: "WS Recuperado",
+      });
+    });
+
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user?.email).toBe("recuperado@test.com");
+  });
 });

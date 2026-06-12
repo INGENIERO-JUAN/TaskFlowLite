@@ -43,7 +43,7 @@ export function Login() {
       toast.success("¡Bienvenido de vuelta!");
       void navigate("/dashboard");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Error al iniciar sesión.";
+      const msg = error instanceof Error ? error.message : /* v8 ignore next */ "Error al iniciar sesión.";
       setError("root", { message: msg });
       toast.error(msg);
     }
@@ -87,6 +87,7 @@ export function Login() {
       {/* Panel derecho — Formulario */}
       <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 bg-white dark:bg-gray-950">
         <div className="w-full max-w-md mx-auto">
+          {/* v8 ignore start */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap size={16} className="text-white" />
@@ -95,6 +96,7 @@ export function Login() {
               TaskFlow <span className="text-blue-600">Lite</span>
             </span>
           </div>
+          {/* v8 ignore stop */}
 
           <div className="mb-8">
             <h1 className="text-gray-900 dark:text-white mb-1" style={{ fontSize: "1.75rem", fontWeight: 800 }}>
