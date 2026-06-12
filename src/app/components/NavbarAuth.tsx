@@ -52,7 +52,7 @@ export function NavbarAuth() {
                 TaskFlow <span className="text-blue-600">Lite</span>
               </span>
               {user?.workspaceName && (
-                <span className="text-gray-400 text-[10px] leading-none mt-0.5">{user.workspaceName}</span>
+                <span className="text-gray-500 dark:text-gray-400 text-[10px] leading-none mt-0.5">{user.workspaceName}</span>
               )}
             </div>
           </div>
@@ -81,11 +81,12 @@ export function NavbarAuth() {
             <button
               onClick={toggleTheme}
               title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
               className="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer border-none bg-transparent">
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
 
-            <button className="relative w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer border-none bg-transparent">
+            <button aria-label="Notificaciones" className="relative w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer border-none bg-transparent">
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
             </button>
