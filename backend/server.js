@@ -178,6 +178,32 @@ app.post("/api/auth/logout", (req, res) => {
   res.json({ message: "Sesión cerrada correctamente." });
 });
 
+// Workspace members
+app.get("/api/workspace/members", checkDb, async (req, res) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).json({ message: "Parámetro 'code' requerido." });
+    }
+
+    const workspacesColl = db.collection("workspaces");
+    const ws = await workspacesColl.findOne({ code: code.toUpperCase() });
+    if (!ws) {
+      return res.status(404).json({ message: "Workspace no encontrado." });
+    }
+
+    const usersColl = db.collection("users");
+    const members = await usersColl
+      .find({ email: { $in: ws.members } })
+      .project({ name: 1, email: 1, _id: 0 })
+      .toArray();
+
+    res.json(members);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Tasks
 app.get("/api/tasks", checkDb, async (req, res) => {
   try {

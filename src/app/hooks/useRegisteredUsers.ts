@@ -1,14 +1,21 @@
 /**
- * useRegisteredUsers — Lee los miembros del workspace activo del usuario.
- * Solo devuelve usuarios que pertenecen al mismo workspace,
- * no todos los usuarios del sistema.
+ * useRegisteredUsers — Obtiene los miembros del workspace activo.
+ *
+ * Estrategia:
+ *  1. Intenta obtenerlos desde el backend (GET /workspace/members?code=XXXX)
+ *  2. Si falla por red (modo offline), cae al fallback de localStorage
+ *     para mantener compatibilidad con el modo demo.
  */
-import { loadSession } from "./useAuthActions";
+import { useState, useEffect } from "react";
+import { apiGet } from "../lib/axios";
+import { useAuth } from "./useAuth";
 
 export interface RegisteredUser {
   name: string;
   email: string;
 }
+
+// ─── Fallback offline ─────────────────────────────────────────────────────────
 
 interface StoredUser {
   name: string;
@@ -24,20 +31,14 @@ interface WorkspaceRecord {
   members: string[];
 }
 
-export function useRegisteredUsers(): RegisteredUser[] {
+function loadMembersOffline(workspaceCode: string): RegisteredUser[] {
   try {
-    const session = loadSession();
-    if (!session?.workspaceCode) return [];
-
-    // Leer workspaces
     const wsRaw = localStorage.getItem("taskflow_workspaces");
     if (!wsRaw) return [];
     const workspaces = JSON.parse(wsRaw) as Record<string, WorkspaceRecord>;
-    const ws = workspaces[session.workspaceCode];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const ws = workspaces[workspaceCode];
     if (!ws) return [];
 
-    // Leer usuarios y filtrar solo los del workspace
     const usersRaw = localStorage.getItem("taskflow_users");
     if (!usersRaw) return [];
     const users = JSON.parse(usersRaw) as StoredUser[];
@@ -48,4 +49,35 @@ export function useRegisteredUsers(): RegisteredUser[] {
   } catch {
     return [];
   }
+}
+
+// ─── Hook principal ───────────────────────────────────────────────────────────
+
+export function useRegisteredUsers(): RegisteredUser[] {
+  const { user } = useAuth();
+  const [members, setMembers] = useState<RegisteredUser[]>([]);
+
+  useEffect(() => {
+    const code = user?.workspaceCode;
+    if (!code) return;
+
+    let cancelled = false;
+
+    async function fetchMembers() {
+      try {
+        const data = await apiGet<RegisteredUser[]>(
+          `/workspace/members?code=${code}`
+        );
+        if (!cancelled) setMembers(data);
+      } catch {
+        // Falló la API (red o backend caído) → usar localStorage
+        if (!cancelled) setMembers(loadMembersOffline(code!));
+      }
+    }
+
+    void fetchMembers();
+    return () => { cancelled = true; };
+  }, [user?.workspaceCode]);
+
+  return members;
 }
