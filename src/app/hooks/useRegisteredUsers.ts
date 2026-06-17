@@ -35,7 +35,7 @@ function loadMembersOffline(workspaceCode: string): RegisteredUser[] {
   try {
     const wsRaw = localStorage.getItem("taskflow_workspaces");
     if (!wsRaw) return [];
-    const workspaces = JSON.parse(wsRaw) as Record<string, WorkspaceRecord>;
+    const workspaces = JSON.parse(wsRaw) as Record<string, WorkspaceRecord | undefined>;
     const ws = workspaces[workspaceCode];
     if (ws === undefined) return [];
 
