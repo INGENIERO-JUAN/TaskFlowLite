@@ -37,7 +37,7 @@ function loadMembersOffline(workspaceCode: string): RegisteredUser[] {
     if (!wsRaw) return [];
     const workspaces = JSON.parse(wsRaw) as Record<string, WorkspaceRecord>;
     const ws = workspaces[workspaceCode];
-    if (!ws) return [];
+    if (ws === undefined) return [];
 
     const usersRaw = localStorage.getItem("taskflow_users");
     if (!usersRaw) return [];
@@ -66,12 +66,12 @@ export function useRegisteredUsers(): RegisteredUser[] {
     async function fetchMembers() {
       try {
         const data = await apiGet<RegisteredUser[]>(
-          `/workspace/members?code=${code}`
+          `/workspace/members?code=${String(code)}`
         );
         if (!cancelled) setMembers(data);
       } catch {
         // Falló la API (red o backend caído) → usar localStorage
-        if (!cancelled) setMembers(loadMembersOffline(code!));
+        if (!cancelled) setMembers(loadMembersOffline(String(code)));
       }
     }
 
